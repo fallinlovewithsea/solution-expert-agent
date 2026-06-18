@@ -116,10 +116,14 @@ class S8FormatOutput(BaseSkill):
             return self._fallback_slides(slides, brand_name, title)
 
     def _build_slide_xml(self, slide_data: dict, brand_name: str) -> str:
-        """构建单页 Slide 的 XML"""
+        """构建单页 Slide 的 XML，应用品牌色"""
         title = slide_data.get("title", "")
         layout = slide_data.get("layout_type", "default")
         bg_color = self._get_bg_color(layout)
+        content = slide_data.get("content", "")
+
+        # 品牌色：尝试从 brand_assets 获取，否则使用默认配色
+        brand_color = brand_name and self._brand_color(brand_name) or "#1a1a2e"
 
         return f"""<slide xmlns="http://www.larkoffice.com/sml/2.0">
   <style>
@@ -129,15 +133,26 @@ class S8FormatOutput(BaseSkill):
     <shape type="rect" x="60" y="50" width="880" height="80">
       <fill><fillColor color="transparent"/></fill>
       <outline><noOutline/></outline>
-      <content><p font-size="28pt" font-weight="bold" color="#1a1a2e">{title}</p></content>
+      <content><p font-size="28pt" font-weight="bold" color="{brand_color}">{title}</p></content>
     </shape>
     <shape type="rect" x="60" y="140" width="880" height="400">
       <fill><fillColor color="transparent"/></fill>
       <outline><noOutline/></outline>
-      <content><p font-size="14pt" color="#333333">{slide_data.get("content", "")}</p></content>
+      <content><p font-size="14pt" color="#333333">{content}</p></content>
     </shape>
   </data>
 </slide>"""
+
+    @staticmethod
+    def _brand_color(brand_name: str) -> str:
+        """获取品牌色"""
+        colors = {
+            "飞鹤": "#1a5276", "a2": "#7b2d8b", "英氏": "#27ae60",
+            "金领冠": "#e67e22", "林氏家居": "#2c3e50", "老庙": "#c0392b",
+            "蒙牛": "#2980b9", "领克": "#16a085", "极氪": "#8e44ad",
+            "利星行": "#34495e", "可画": "#e74c3c", "董酒": "#d35400",
+        }
+        return colors.get(brand_name, "#1a1a2e")
 
     def _get_bg_color(self, layout: str) -> str:
         colors = {
@@ -285,7 +300,9 @@ class S8FormatOutput(BaseSkill):
             fp.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
             fp.alignment = PP_ALIGN.RIGHT
 
-        output_path = "/data/exports/output.pptx"
+        import uuid
+        export_id = str(uuid.uuid4())[:8]
+        output_path = f"/data/exports/{brand_name}_{export_id}.pptx"
         os.makedirs("/data/exports", exist_ok=True)
         prs.save(output_path)
         return output_path

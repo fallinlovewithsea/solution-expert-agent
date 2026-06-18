@@ -1,15 +1,15 @@
 from app.skills.base import BaseSkill, SkillInput, SkillOutput
 from pydantic import Field
-from typing import List, Dict, Optional
+from typing import List, Optional, Dict
 from app.skills.xhs_collector import XHSCollector
 
 
 class IndustryInsightInput(SkillInput):
-    industry: str = Field(description="目标行业")
-    category: str = Field(default="", description="细分品类")
-    competitors: List[str] = Field(default_factory=list, description="竞品品牌名列表")
-    client_name: str = Field(default="", description="客户品牌名")
-    client_brand: str = Field(default="", description="客户品牌名（别名）")
+    industry: str = Field(description="行业")
+    category: str = Field(default="", description="子品类")
+    competitors: List[str] = Field(default_factory=list, description="竞品列表")
+    client_name: str = Field(default="", description="客户名称")
+    client_brand: str = Field(default="", description="客户品牌")
 
 
 class IndustryInsightOutput(SkillOutput):
@@ -17,304 +17,221 @@ class IndustryInsightOutput(SkillOutput):
     competitor_analysis: List[Dict] = Field(default_factory=list)
     client_diagnosis: Dict = Field(default_factory=dict)
     growth_analysis: Dict = Field(default_factory=dict)
-    # 汇总摘要
-    summary: str = Field(default="")
+    summary: str = ""
 
 
 class S3IndustryInsight(BaseSkill):
     name = "s3_industry_insight"
-    description = "行业洞察：采集小红书数据 + LLM 深度分析行业/竞品/客户"
+    description = "行业洞察：采集小红书行业数据 + 竞品分析 + 客户诊断 + 增长分析"
 
     INDUSTRY_KEYWORDS = {
-        "母婴": ["宝宝奶粉怎么选", "敏宝口粮", "奶粉测评", "育儿好物", "母婴种草"],
-        "大健康": ["养生好物", "健康管理", "保健品推荐", "营养补充"],
-        "家居家装": ["装修灵感", "家居好物", "家具推荐", "软装搭配"],
-        "汽车": ["买车攻略", "新车评测", "新能源车", "汽车保养"],
-        "酒类": ["白酒推荐", "好酒分享", "品酒笔记", "送礼酒"],
-        "食品": ["美食推荐", "零食测评", "健康食品", "饮品推荐"],
+        "母婴": ["母婴", "奶粉", "宝宝", "育儿", "辅食", "婴幼儿"],
+        "大健康": ["健康", "养生", "保健品", "营养", "大健康", "调理"],
+        "家居家装": ["家居", "装修", "家装", "软装", "家具", "全屋定制"],
+        "汽车": ["汽车", "新能源", "电动车", "新车", "试驾", "买车"],
+        "酒类": ["酒", "白酒", "红酒", "品酒", "送礼", "茅台"],
+        "食品": ["食品", "零食", "饮料", "乳制品", "牛奶", "酸奶"],
+        "珠宝": ["珠宝", "黄金", "钻石", "首饰", "戒指", "项链"],
+        "设计": ["设计", "UI", "品牌设计", "平面设计", "包装设计"],
+        "技术": ["技术", "SaaS", "云计算", "AI", "数据", "数字化转型"],
     }
 
     def execute(self, input_data: IndustryInsightInput) -> IndustryInsightOutput:
         collector = XHSCollector()
-
         keywords = self.INDUSTRY_KEYWORDS.get(
             input_data.industry,
-            [input_data.industry + "推荐", input_data.industry + "测评"],
+            [input_data.industry] if input_data.industry else ["营销"],
         )
 
-        # ── 行业数据采集 ──
-        industry_data = collector.search_industry(keywords)
+        # 1. 行业数据采集
+        industry_data = collector.search_industry(keywords, limit=20)
 
-        # ── 竞品数据采集 ──
-        competitor_data = []
+        # 2. 竞品数据采集（一次采集，避免重复）
+        competitor_data = {}
         for comp in input_data.competitors:
-            comp_data = collector.search_competitor(comp)
-            competitor_data.append(self._analyze_competitor(comp_data))
+            if comp:
+                competitor_data[comp] = collector.search_competitor(comp, limit=10)
 
-        # ── 客户数据采集 ──
-        client_name = input_data.client_name or input_data.client_brand
-        client_data = collector.search_client(client_name) if client_name else {}
-        diagnosis = self._analyze_client(client_data, client_name)
+        # 3. 客户数据采集
+        client_data = None
+        if input_data.client_name:
+            client_data = collector.search_client(input_data.client_name, limit=10)
 
-        # ── 增长分析 ──
-        growth = self._analyze_growth(input_data.industry, industry_data, competitor_data)
-
-        # ── 行业分析 ──
+        # 4. 数据分析
         industry_analysis = self._analyze_industry(industry_data)
+        competitor_analysis = self._analyze_competitors(competitor_data, input_data.competitors)
+        client_diagnosis = self._analyze_client(client_data, input_data.client_name)
+        growth_analysis = self._analyze_growth(industry_analysis, competitor_analysis)
 
-        # ── 生成摘要 ──
+        # 5. 生成摘要
         summary = self._build_summary(
-            industry_analysis, competitor_data, diagnosis, growth
+            input_data.industry, industry_analysis, competitor_analysis, client_diagnosis
         )
 
-        # ── 保存原始采集数据到 L1 ──
-        self._save_raw_xhs_data("industry", input_data.industry, keywords, industry_data)
-        for comp in input_data.competitors:
-            comp_raw = collector.search_competitor(comp)
-            self._save_raw_xhs_data("competitor", comp, [comp], comp_raw)
-        if client_name:
-            self._save_raw_xhs_data("client", client_name, [client_name], client_data)
+        # 6. 写入 L1 原始数据层（一次批量写入，避免重复采集）
+        self._save_raw_xhs_data(
+            input_data, industry_data, competitor_data, client_data,
+            industry_analysis, competitor_analysis, client_diagnosis,
+        )
 
         return IndustryInsightOutput(
             industry_analysis=industry_analysis,
-            competitor_analysis=competitor_data,
-            client_diagnosis=diagnosis,
-            growth_analysis=growth,
+            competitor_analysis=competitor_analysis,
+            client_diagnosis=client_diagnosis,
+            growth_analysis=growth_analysis,
             summary=summary,
         )
 
-    # ── 行业分析 ──
+    # ── 分析逻辑 ──────────────────────────────────────────────
 
-    def _analyze_industry(self, data: Dict) -> Dict:
-        """使用采集器返回的 LLM 分析结果"""
+    def _analyze_industry(self, data: dict) -> dict:
         analysis = data.get("analysis", {})
-        notes = data.get("notes", [])
-        total_likes = sum(n.get("likes", 0) for n in notes)
-        total_comments = sum(n.get("comments", 0) for n in notes)
-        total_collects = sum(n.get("collects", 0) for n in notes)
-
         return {
-            # 基础统计
-            "trend_keywords": data.get("keywords", []),
-            "note_count": len(notes),
-            "total_interactions": total_likes + total_comments + total_collects,
-            "total_likes": total_likes,
-            "total_comments": total_comments,
-            "total_collects": total_collects,
-            "avg_likes": total_likes // max(len(notes), 1),
-            "volume_trend": (
-                f"共采集 {len(notes)} 篇笔记，总互动量 "
-                f"{total_likes + total_comments + total_collects}"
-            ),
-            # LLM 深度分析
-            "content_themes": analysis.get("content_themes", []),
-            "audience_interest": analysis.get("audience_interest", []),
-            "hot_elements": analysis.get("hot_elements", ""),
-            "sentiment_overview": analysis.get("sentiment_overview", ""),
-            "content_gap": analysis.get("content_gap", []),
-            "recommended_angles": analysis.get("recommended_angles", []),
-            # 元数据
-            "collected_at": data.get("collected_at", ""),
+            "overview": analysis.get("content_themes", ""),
+            "hot_topics": analysis.get("user_interests", ""),
+            "viral_features": analysis.get("viral_features", ""),
+            "content_gaps": analysis.get("content_gaps", ""),
+            "entry_angles": analysis.get("entry_angles", ""),
+            "sentiment": analysis.get("sentiment", ""),
+            "note_count": len(data.get("notes", [])),
         }
 
-    # ── 竞品分析 ──
+    def _analyze_competitors(
+        self, competitor_data: dict, competitors: list
+    ) -> list:
+        results = []
+        for comp in competitors:
+            if comp not in competitor_data:
+                continue
+            data = competitor_data[comp]
+            analysis = data.get("analysis", {})
+            results.append({
+                "brand": comp,
+                "note_count": len(data.get("notes", [])),
+                "content_themes": analysis.get("content_themes", ""),
+                "sentiment": analysis.get("sentiment", ""),
+                "strengths": analysis.get("strengths", []),
+                "weaknesses": analysis.get("weaknesses", []),
+                "comment_count": len(data.get("comments", [])),
+            })
+        return results
 
-    def _analyze_competitor(self, data: Dict) -> Dict:
-        """使用采集器返回的 LLM 分析 + 评论数据"""
-        analysis = data.get("analysis", {})
-        notes = data.get("notes", [])
-        comments = data.get("comments", [])
-        brand = data.get("brand", "")
-
-        total_likes = sum(n.get("likes", 0) for n in notes)
-        note_count = len(notes)
-        avg_likes = total_likes // max(note_count, 1)
-
+    def _analyze_client(self, client_data: dict, client_name: str) -> dict:
+        if not client_data:
+            return {"brand": client_name, "status": "未采集到数据", "note_count": 0}
+        analysis = client_data.get("analysis", {})
         return {
-            "name": brand,
-            "note_count": note_count,
-            "monthly_notes": note_count,
-            "avg_interaction": avg_likes,
-            "total_likes": total_likes,
-            # LLM 分析
-            "content_strategy": {
-                "themes": analysis.get("content_themes", []),
-                "kos_estimated_scale": analysis.get("kos_estimated_scale", 0),
-                "publishing_frequency": analysis.get(
-                    "publishing_frequency", f"月均 {note_count} 篇"
-                ),
-                "engagement_rate": analysis.get("engagement_rate", "N/A"),
-            },
-            "strength": analysis.get("strength", "待分析"),
-            "weakness": analysis.get("weakness", "待分析"),
-            # 评论分析
-            "comment_count": len(comments),
-            "comment_sentiment": self._sentiment_from_comments(comments),
-            # 元数据
-            "collected_at": data.get("collected_at", ""),
+            "brand": client_name,
+            "note_count": len(client_data.get("notes", [])),
+            "content_themes": analysis.get("content_themes", ""),
+            "sentiment": analysis.get("sentiment", ""),
+            "performance": analysis.get("performance", ""),
+            "gaps": analysis.get("gaps", []),
         }
 
-    # ── 客户诊断 ──
-
-    def _analyze_client(self, data: Dict, client_name: str) -> Dict:
-        """使用采集器返回的 LLM 分析 + 评论舆情"""
-        analysis = data.get("analysis", {})
-        notes = data.get("notes", [])
-        comments = data.get("comments", [])
-
-        note_count = len(notes)
-        total_likes = sum(n.get("likes", 0) for n in notes)
-        avg_likes = total_likes // max(note_count, 1)
-
-        if not analysis:
-            return {
-                "account_health_score": 0,
-                "content_quality_score": 0,
-                "sentiment_ratio": {"positive": 0, "neutral": 0, "negative": 0},
-                "key_issues": ["暂无数据"],
-                "improvement_areas": ["请先采集客户小红书数据"],
-                "note_count": 0,
-                "avg_likes": 0,
-                "total_likes": 0,
-                "comment_count": 0,
-            }
-
-        # 从 analysis 提取情感数据
-        sentiment = analysis.get("sentiment", {})
-        sentiment_ratio = {
-            "positive": sentiment.get("positive", 0.65),
-            "neutral": sentiment.get("neutral", 0.25),
-            "negative": sentiment.get("negative", 0.10),
-        }
-
+    def _analyze_growth(self, industry: dict, competitors: list) -> dict:
         return {
-            "account_health_score": analysis.get("account_health_score", 0),
-            "content_quality_score": analysis.get("content_quality_score", 0),
-            "sentiment_ratio": sentiment_ratio,
-            "key_issues": analysis.get("key_issues", []),
-            "improvement_areas": analysis.get("improvement_areas", []),
-            # 基础统计
-            "note_count": note_count,
-            "avg_likes": avg_likes,
-            "total_likes": total_likes,
-            "comment_count": len(comments),
-            "comment_sentiment": self._sentiment_from_comments(comments),
-            # 元数据
-            "collected_at": data.get("collected_at", ""),
-        }
-
-    # ── 增长分析 ──
-
-    def _analyze_growth(
-        self, industry: str, industry_data: Dict, competitor_data: List[Dict]
-    ) -> Dict:
-        """基于行业数据 + 竞品数据生成增长策略建议"""
-        analysis = industry_data.get("analysis", {})
-        content_gap = analysis.get("content_gap", [])
-        recommended_angles = analysis.get("recommended_angles", [])
-
-        # 竞品策略汇总
-        competitor_strategies = []
-        for comp in competitor_data:
-            cs = comp.get("content_strategy", {})
-            if isinstance(cs, dict):
-                competitor_strategies.append({
-                    "name": comp.get("name", ""),
-                    "strength": comp.get("strength", ""),
-                    "weakness": comp.get("weakness", ""),
-                    "kos_scale": cs.get("kos_estimated_scale", 0),
-                })
-
-        return {
-            "platform_strategy": f"小红书{industry}行业增长策略",
-            "growth_model": "KOS矩阵 + 内容种草 + AI赋能",
-            "content_gap_opportunities": content_gap,
-            "recommended_angles": recommended_angles,
-            "competitor_benchmark": competitor_strategies,
-            "key_success_factors": [
-                "高频稳定的内容输出",
-                "KOS 矩阵账号联动",
-                "数据驱动的选题优化",
-                "评论区深度互动运营",
+            "market_size": f"{industry.get('note_count', 0)} 篇行业笔记",
+            "competitor_count": len(competitors),
+            "growth_drivers": [
+                "AIGC内容生产效率提升",
+                "KOS矩阵规模化运营",
+                "搜索占位策略优化",
+                "评论区营销转化",
+            ],
+            "key_opportunities": [
+                "关键词前置+单篇单一关键词策略",
+                "AB测试驱动内容优化",
+                "A/B/C分层账号分发",
             ],
         }
 
-    # ── 辅助方法 ──
-
-    def _sentiment_from_comments(self, comments: List[Dict]) -> Dict:
-        """基于评论关键词做简易情感分析"""
-        if not comments:
-            return {"positive": 0, "neutral": 0, "negative": 0}
-
-        positive_words = ["好", "棒", "喜欢", "推荐", "赞", "不错", "好用", "收藏", "学到了"]
-        negative_words = ["差", "垃圾", "坑", "后悔", "难用", "不行", "踩雷", "避雷", "智商税"]
-
-        pos = neg = neu = 0
-        for c in comments:
-            text = c.get("content", "")
-            if any(w in text for w in positive_words):
-                pos += 1
-            elif any(w in text for w in negative_words):
-                neg += 1
-            else:
-                neu += 1
-
-        total = max(pos + neg + neu, 1)
-        return {
-            "positive": round(pos / total, 2),
-            "neutral": round(neu / total, 2),
-            "negative": round(neg / total, 2),
-        }
-
     def _build_summary(
-        self,
-        industry: Dict,
-        competitors: List[Dict],
-        diagnosis: Dict,
-        growth: Dict,
+        self, industry: str, industry_analysis: dict,
+        competitor_analysis: list, client_diagnosis: dict,
     ) -> str:
-        """生成行业洞察一句话摘要"""
-        note_count = industry.get("note_count", 0)
-        themes = industry.get("content_themes", [])
-        theme_str = ""
-        if isinstance(themes, list) and themes:
-            if isinstance(themes[0], dict):
-                theme_str = "、".join(t.get("theme", "") for t in themes[:3])
-            else:
-                theme_str = "、".join(str(t) for t in themes[:3])
+        parts = [f"{industry}行业小红书KOS营销分析："]
+        parts.append(f"采集行业笔记 {industry_analysis.get('note_count', 0)} 篇")
+        parts.append(f"分析竞品 {len(competitor_analysis)} 个")
+        if client_diagnosis.get("status") != "未采集到数据":
+            parts.append(f"客户笔记 {client_diagnosis.get('note_count', 0)} 篇")
+        return "，".join(parts)
 
-        competitor_count = len(competitors)
-        health = diagnosis.get("account_health_score", "N/A")
+    # ── L1 数据写入 ───────────────────────────────────────────
 
-        return (
-            f"{industry.get('trend_keywords', [''])[0]}行业共采集 {note_count} 篇笔记，"
-            f"主要内容主题为 {theme_str or '待分析'}；"
-            f"分析了 {competitor_count} 个竞品，"
-            f"客户账号健康度 {health} 分。"
-        )
-
-    def _save_raw_xhs_data(self, collect_type: str, target_name: str,
-                           keywords: List[str], data: Dict):
-        """保存原始采集数据到 L1 raw_xhs_data 表"""
-        if not data:
-            return
+    def _save_raw_xhs_data(
+        self, input_data: IndustryInsightInput,
+        industry_data: dict, competitor_data: dict, client_data: dict,
+        industry_analysis: dict, competitor_analysis: list, client_diagnosis: dict,
+    ):
+        """将原始数据写入 L1 raw_xhs_data 表"""
         try:
-            from app.db.database import get_db
-            import json as j
-            with get_db() as db:
-                cursor = db.cursor()
-                cursor.execute(
-                    """INSERT INTO raw_xhs_data
-                       (collect_type, target_name, keywords, notes, comments, analysis)
-                       VALUES (%s, %s, %s, %s, %s, %s)""",
+            from app.db.db import get_db
+            db = get_db()
+            import json
+
+            # 行业数据
+            db.execute(
+                "INSERT INTO raw_xhs_data (collect_type, target_name, keywords, notes, comments, analysis, collected_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                (
+                    "industry",
+                    input_data.industry,
+                    json.dumps(self.INDUSTRY_KEYWORDS.get(input_data.industry, []), ensure_ascii=False),
+                    json.dumps(industry_data.get("notes", []), ensure_ascii=False),
+                    "[]",
+                    json.dumps(industry_analysis, ensure_ascii=False),
+                ),
+            )
+
+            # 竞品数据（已在 execute 中采集，此处直接使用）
+            for comp_name, comp_data in competitor_data.items():
+                db.execute(
+                    "INSERT INTO raw_xhs_data (collect_type, target_name, keywords, notes, comments, analysis, collected_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, NOW())",
                     (
-                        collect_type,
-                        target_name,
-                        j.dumps(keywords),
-                        j.dumps(data.get("notes", [])),
-                        j.dumps(data.get("comments", [])),
-                        j.dumps(data.get("analysis", {})),
+                        "competitor",
+                        comp_name,
+                        json.dumps([comp_name], ensure_ascii=False),
+                        json.dumps(comp_data.get("notes", []), ensure_ascii=False),
+                        json.dumps(comp_data.get("comments", []), ensure_ascii=False),
+                        json.dumps(comp_data.get("analysis", {}), ensure_ascii=False),
                     ),
                 )
-        except Exception:
-            pass
+
+            # 客户数据
+            if client_data:
+                db.execute(
+                    "INSERT INTO raw_xhs_data (collect_type, target_name, keywords, notes, comments, analysis, collected_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                    (
+                        "client",
+                        input_data.client_name,
+                        json.dumps([input_data.client_name], ensure_ascii=False),
+                        json.dumps(client_data.get("notes", []), ensure_ascii=False),
+                        json.dumps(client_data.get("comments", []), ensure_ascii=False),
+                        json.dumps(client_data.get("analysis", {}), ensure_ascii=False),
+                    ),
+                )
+
+            db.commit()
+        except Exception as e:
+            print(f"[S3] L1 数据写入失败: {e}")
+
+    @staticmethod
+    def _sentiment_from_comments(comments: list) -> str:
+        pos = 0
+        neg = 0
+        pos_words = ["好", "不错", "推荐", "喜欢", "赞", "棒", "优秀", "靠谱"]
+        neg_words = ["差", "不好", "失望", "坑", "后悔", "踩雷", "垃圾"]
+        for c in comments:
+            text = c.get("content", "")
+            if any(w in text for w in pos_words):
+                pos += 1
+            if any(w in text for w in neg_words):
+                neg += 1
+        if pos > neg:
+            return "正面为主"
+        if neg > pos:
+            return "负面为主"
+        return "中性"

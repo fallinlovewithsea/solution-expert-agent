@@ -1,15 +1,16 @@
 from app.skills.base import BaseSkill, SkillInput, SkillOutput
 from pydantic import Field
-from typing import Dict
+from typing import List, Optional, Dict
+import json
 import uuid
 
 
 class ArchiveInput(SkillInput):
-    final_proposal: Dict = Field(description="提案终稿")
-    review_comments: str = Field(default="")
-    bid_result: str = Field(default="")
-    user_id: str = Field(default="default_user")
-    session_id: str = Field(default="")
+    final_proposal: Dict = Field(description="最终方案")
+    review_comments: str = Field(default="", description="审核意见")
+    bid_result: str = Field(default="", description="中标结果")
+    user_id: str = Field(default="default_user", description="用户ID")
+    session_id: str = Field(default="", description="会话ID")
 
 
 class ArchiveOutput(SkillOutput):
@@ -19,114 +20,165 @@ class ArchiveOutput(SkillOutput):
 
 class S9Archive(BaseSkill):
     name = "s9_archive"
-    description = "复盘归档：更新 8 大物料库 + 写入记忆层 + 生成复盘报告"
+    description = "复盘归档：更新品牌库、竞品库、复盘库 + 记忆层"
 
     def execute(self, input_data: ArchiveInput) -> ArchiveOutput:
-        updates = []
+        updated = []
+        session_id = input_data.session_id or str(uuid.uuid4())[:8]
 
-        # 更新品牌信息
-        self._update_brand_info(input_data.final_proposal)
-        updates.append("brand_info")
+        # 1. 更新品牌信息
+        if self._update_brand_info(input_data.final_proposal):
+            updated.append("品牌库")
 
-        # 更新竞品库
-        self._update_competitor_library(input_data.final_proposal)
-        updates.append("competitor_analysis")
+        # 2. 更新竞品库
+        if self._update_competitor_library(input_data.final_proposal):
+            updated.append("竞品库")
 
-        # 更新复盘库
-        self._update_review_library(input_data)
-        updates.append("proposal_review")
+        # 3. 更新复盘库
+        proposal_id = self._update_review_library(
+            input_data.final_proposal, input_data.review_comments, input_data.bid_result
+        )
+        if proposal_id:
+            updated.append("复盘库")
 
-        # 写入记忆层 (L3)
-        self._save_to_memory(input_data)
-        updates.append("memory_layer")
-
-        report = f"""## 复盘报告
-- 竞标结果: {input_data.bid_result}
-- 评审意见: {input_data.review_comments}
-- 更新物料库: {', '.join(updates)}
-"""
-
-        return ArchiveOutput(
-            updated_libraries=updates,
-            review_report=report,
+        # 4. 写入记忆层
+        self._save_to_memory(
+            input_data.user_id, session_id, input_data.final_proposal,
+            input_data.bid_result,
         )
 
-    def _save_to_memory(self, input_data: ArchiveInput):
-        """写入记忆层：用户偏好 + 会话历史"""
-        try:
-            from app.db.memory import MemoryStore
+        # 5. 生成复盘报告
+        review_report = self._generate_review_report(
+            input_data.final_proposal, input_data.review_comments,
+            input_data.bid_result, updated,
+        )
 
-            memory = MemoryStore()
-            proposal = input_data.final_proposal
-            session_id = input_data.session_id or str(uuid.uuid4())
-            user_id = input_data.user_id
-            client_name = proposal.get("client_name", "unknown")
+        return ArchiveOutput(updated_libraries=updated, review_report=review_report)
+
+    # ── 品牌库更新 ─────────────────────────────────────────────
+
+    def _update_brand_info(self, proposal: dict) -> bool:
+        try:
+            from app.db.db import get_db
+            db = get_db()
+            client_name = proposal.get("client_name", "")
             industry = proposal.get("industry", "")
-
-            # 保存会话记忆
-            memory.save_session(
-                session_id=session_id,
-                user_id=user_id,
-                client_name=client_name,
-                industry=industry,
-                stage="s9_archive",
-                context={
-                    "proposal": proposal,
-                    "bid_result": input_data.bid_result,
-                    "review_comments": input_data.review_comments,
-                },
+            db.execute(
+                "INSERT INTO brand_info (brand_name, industry, last_proposal, updated_at) "
+                "VALUES (?, ?, ?, NOW()) "
+                "ON CONFLICT (brand_name) DO UPDATE SET "
+                "industry = excluded.industry, last_proposal = excluded.last_proposal, updated_at = NOW()",
+                (client_name, industry, json.dumps(proposal, ensure_ascii=False)),
             )
+            db.commit()
+            return True
+        except Exception as e:
+            print(f"[S9] 品牌库更新失败: {e}")
+            return False
 
-            # 更新中标结果
-            if input_data.bid_result:
-                memory.update_session_result(
-                    session_id=session_id,
-                    bid_result=input_data.bid_result,
-                    review_feedback=input_data.review_comments,
-                )
+    # ── 竞品库更新 ─────────────────────────────────────────────
 
-            # 更新用户偏好
-            memory.record_industry(user_id, industry)
-            memory.record_search(user_id, client_name)
-            memory.update_user_preferences(user_id, {
-                "interaction_count": 1,
-            })
-
-        except Exception:
-            pass
-
-    def _update_brand_info(self, proposal: Dict):
+    def _update_competitor_library(self, proposal: dict) -> bool:
+        """更新竞品库：从方案中提取竞品信息并持久化"""
         try:
-            from app.db.database import get_db
-            with get_db() as db:
-                cursor = db.cursor()
-                cursor.execute(
-                    """INSERT INTO brand_info (brand_name, industry, current_status)
-                       VALUES (%s, %s, %s)
-                       ON CONFLICT (brand_name) DO UPDATE
-                       SET current_status = EXCLUDED.current_status,
-                           updated_at = NOW()""",
+            from app.db.db import get_db
+            db = get_db()
+
+            # 从方案中提取竞品信息
+            op_strategy = proposal.get("operation_strategy", {}) or {}
+            competitor_benchmark = op_strategy.get("competitor_benchmark", "")
+            competitors = op_strategy.get("competitors", []) or []
+
+            if not competitor_benchmark and not competitors:
+                return False
+
+            # 写入竞品记录
+            for comp in (competitors if isinstance(competitors, list) else []):
+                comp_name = comp if isinstance(comp, str) else comp.get("name", str(comp))
+                db.execute(
+                    "INSERT INTO competitor_library (competitor_name, industry, benchmark_data, updated_at) "
+                    "VALUES (?, ?, ?, NOW()) "
+                    "ON CONFLICT (competitor_name) DO UPDATE SET "
+                    "benchmark_data = excluded.benchmark_data, updated_at = NOW()",
                     (
-                        proposal.get("client_name", ""),
+                        comp_name,
                         proposal.get("industry", ""),
-                        "已提案",
+                        json.dumps({"benchmark": competitor_benchmark, "raw": comp}, ensure_ascii=False),
                     ),
                 )
-        except Exception:
-            pass
 
-    def _update_competitor_library(self, proposal: Dict):
-        pass
+            db.commit()
+            return True
+        except Exception as e:
+            print(f"[S9] 竞品库更新失败: {e}")
+            return False
 
-    def _update_review_library(self, input_data: ArchiveInput):
+    # ── 复盘库更新 ─────────────────────────────────────────────
+
+    def _update_review_library(
+        self, proposal: dict, review_comments: str, bid_result: str,
+    ) -> Optional[str]:
         try:
-            from app.db.database import get_db
-            with get_db() as db:
-                cursor = db.cursor()
-                cursor.execute(
-                    """INSERT INTO review_records (proposal_id, extracted_data)
-                       VALUES (%s, %s)""",
-                    (1, input_data.final_proposal),
-                )
-        except Exception:
-            pass
+            from app.db.db import get_db
+            db = get_db()
+            review_id = str(uuid.uuid4())[:12]
+            db.execute(
+                "INSERT INTO review_records (review_id, client_name, industry, proposal_summary, review_comments, bid_result, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, NOW())",
+                (
+                    review_id,
+                    proposal.get("client_name", ""),
+                    proposal.get("industry", ""),
+                    json.dumps(proposal, ensure_ascii=False),
+                    review_comments,
+                    bid_result,
+                ),
+            )
+            db.commit()
+            return review_id
+        except Exception as e:
+            print(f"[S9] 复盘库更新失败: {e}")
+            return None
+
+    # ── 记忆层写入 ─────────────────────────────────────────────
+
+    def _save_to_memory(
+        self, user_id: str, session_id: str, proposal: dict, bid_result: str,
+    ):
+        try:
+            from app.db.memory import MemoryStore
+            memory = MemoryStore()
+            client_name = proposal.get("client_name", "")
+            industry = proposal.get("industry", "")
+
+            # 保存会话
+            memory.save_session(
+                session_id, user_id, client_name, industry,
+                "复盘归档",
+                json.dumps(proposal, ensure_ascii=False)[:500],
+            )
+
+            # 记录中标结果
+            if bid_result:
+                memory.record_bid_result(user_id, bid_result)
+
+            # 更新交互次数
+            memory.increment_interaction(user_id)
+        except Exception as e:
+            print(f"[S9] 记忆层写入失败: {e}")
+
+    # ── 复盘报告生成 ───────────────────────────────────────────
+
+    def _generate_review_report(
+        self, proposal: dict, review_comments: str, bid_result: str, updated: list,
+    ) -> str:
+        parts = []
+        client = proposal.get("client_name", "未知客户")
+        industry = proposal.get("industry", "未知行业")
+        parts.append(f"## {client} 项目归档报告")
+        parts.append(f"- 行业：{industry}")
+        parts.append(f"- 中标结果：{bid_result or '待定'}")
+        if review_comments:
+            parts.append(f"- 审核意见：{review_comments}")
+        parts.append(f"- 更新模块：{', '.join(updated) if updated else '无'}")
+        return "\n".join(parts)

@@ -34,7 +34,7 @@ class S5ProposalDesign(BaseSkill):
    - 产品能力匹配
    - 技术架构
    - 预算规划
-3. 案例展示
+3. 案例展示（案例名称、行业、相关性、关键指标、参考价值）
 4. 实施路径 & 交付物
 """
 
@@ -56,13 +56,76 @@ class S5ProposalDesign(BaseSkill):
 请生成完整的品牌增长全案方案，返回 JSON：
 - operation_strategy: 运营策略+执行方案（含 industry_insight, client_diagnosis, competitor_benchmark, growth_strategy, platform_strategy, execution_plan）
 - tool_empowerment: 工具赋能+预算规划（含 product_capability, tech_architecture, budget_planning）
+- case_display: 案例展示列表，每项含 case_name, industry, relevance, key_metrics, reference_value
 - implementation_path: 实施路径（含 phase, timeline, deliverables）
 - full_proposal: 完整方案文本
 
 只返回 JSON。"""
 
         extracted = self._llm_generate(prompt)
+
+        # 确保 case_display 总是有值
+        if not extracted.get("case_display"):
+            extracted["case_display"] = self._build_default_cases(input_data)
+
+        # 确保 implementation_path 有值
+        if not extracted.get("implementation_path"):
+            extracted["implementation_path"] = self._build_default_phases(input_data)
+
         return ProposalDesignOutput(**extracted)
+
+    def _build_default_cases(self, input_data: ProposalDesignInput) -> List[Dict]:
+        """LLM 未生成案例时，构建默认案例展示"""
+        req = input_data.requirement_document
+        industry = req.get("industry", "")
+        cases = []
+
+        if "母婴" in industry:
+            cases = [
+                {"case_name": "飞鹤繁星计划", "industry": "母婴", "relevance": "高",
+                 "key_metrics": "KOS矩阵行业规模第一，5版本迭代",
+                 "reference_value": "KOS矩阵规模化 + 搜索占位策略"},
+                {"case_name": "a2至初KOS项目", "industry": "母婴", "relevance": "高",
+                 "key_metrics": "15天15,000篇笔记，霸屏率70%",
+                 "reference_value": "数据驱动复盘 + AB测试方法论"},
+            ]
+        elif "家居家装" in industry:
+            cases = [
+                {"case_name": "林氏家居KOS矩阵", "industry": "家居家装", "relevance": "高",
+                 "key_metrics": "场景展示效果比单品好3倍",
+                 "reference_value": "场景化内容 + KOS代发代管"},
+            ]
+        elif "汽车" in industry:
+            cases = [
+                {"case_name": "利星行汽车新媒体", "industry": "汽车", "relevance": "高",
+                 "key_metrics": "微信+小红书双平台策略",
+                 "reference_value": "双平台矩阵 + 线索转化"},
+                {"case_name": "领克汽车KOS", "industry": "汽车", "relevance": "高",
+                 "key_metrics": "新能源赛道快速布局",
+                 "reference_value": "KOS矩阵 + 用户口碑"},
+            ]
+
+        if not cases:
+            cases = [
+                {"case_name": "飞鹤繁星计划", "industry": "母婴", "relevance": "中",
+                 "key_metrics": "KOS矩阵行业规模第一",
+                 "reference_value": "方法论参考：AIGC+代发代管+数据闭环"},
+            ]
+
+        return cases
+
+    def _build_default_phases(self, input_data: ProposalDesignInput) -> List[Dict]:
+        """构建默认实施路径"""
+        return [
+            {"phase": "Phase 1: 需求诊断与策略对齐", "timeline": "第1-2周",
+             "deliverables": "需求诊断报告、增长策略文档"},
+            {"phase": "Phase 2: 内容生产与账号搭建", "timeline": "第3-4周",
+             "deliverables": "KOS矩阵搭建、AIGC内容生产"},
+            {"phase": "Phase 3: 上线运营与数据监控", "timeline": "第5-8周",
+             "deliverables": "内容发布、数据看板、AB测试"},
+            {"phase": "Phase 4: 数据复盘与策略优化", "timeline": "第9-12周",
+             "deliverables": "复盘报告、优化方案、SOP文档"},
+        ]
 
     def _llm_generate(self, prompt: str) -> dict:
         import json
