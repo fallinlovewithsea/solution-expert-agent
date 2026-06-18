@@ -1,15 +1,15 @@
 from typing import TypedDict, Annotated, Sequence
 import operator
 from langgraph.graph import StateGraph, END
-from app.skills.s1_opportunity import S1OpportunityAssessment, OpportunityInput
-from app.skills.s2_requirement import S2RequirementDiagnosis, RequirementInput
-from app.skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
-from app.skills.s4_client_insight import S4ClientInsight, ClientInsightInput
-from app.skills.s5_proposal_design import S5ProposalDesign, ProposalDesignInput
-from app.skills.s6_case_match import S6CaseMatch, CaseMatchInput
-from app.skills.s7_content_gen import S7ContentGeneration, ContentGenInput
-from app.skills.s8_format_output import S8FormatOutput, FormatOutputInput
-from app.skills.s9_archive import S9Archive, ArchiveInput
+from skills.s1_opportunity import S1OpportunityAssessment, OpportunityInput
+from skills.s2_requirement import S2RequirementDiagnosis, RequirementInput
+from skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
+from skills.s4_client_insight import S4ClientInsight, ClientInsightInput
+from skills.s5_proposal_design import S5ProposalDesign, ProposalDesignInput
+from skills.s6_case_match import S6CaseMatch, CaseMatchInput
+from skills.s7_content_gen import S7ContentGeneration, ContentGenInput
+from skills.s8_format_output import S8FormatOutput, FormatOutputInput
+from skills.s9_archive import S9Archive, ArchiveInput
 
 
 class AgentState(TypedDict):

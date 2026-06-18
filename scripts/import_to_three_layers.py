@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 DATA_DIR = Path("/data/raw/feishu")
-OUTPUT_DIR = Path("/workspace/data/three_layers")
+OUTPUT_DIR = Path("/workspace/Database")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── 加载知识库 ──
@@ -33,32 +33,40 @@ print("=" * 60)
 
 l1_documents = []
 for doc in doc_index:
-    doc_hash = doc["doc_hash"]
-    # 生成文档内容摘要（基于文件名和元数据推断）
+    doc_hash = doc.get("doc_hash", doc.get("feishu_token", ""))
+    # 兼容新旧字段名
+    doc_name = doc.get("name") or doc.get("doc_name", "")
+    doc_type = doc.get("type") or doc.get("doc_type", "")
+    doc_folder = doc.get("folder") or doc.get("source_folder", "")
+    doc_industry = doc.get("industry", "")
+    doc_is_template = doc.get("is_template", False)
+    doc_is_case = doc.get("is_case", False)
+    doc_brand = doc.get("brand", "")
+    # 生成文档内容摘要
     content_parts = []
-    content_parts.append(f"# {doc['name']}")
-    content_parts.append(f"类型: {doc['type']}")
-    content_parts.append(f"位置: {doc['folder']}")
-    content_parts.append(f"行业: {doc['industry']}")
-    content_parts.append(f"模板: {'是' if doc['is_template'] else '否'}")
-    content_parts.append(f"案例: {'是' if doc['is_case'] else '否'}")
-    if doc.get("brand"):
-        content_parts.append(f"品牌: {doc['brand']}")
+    content_parts.append(f"# {doc_name}")
+    content_parts.append(f"类型: {doc_type}")
+    content_parts.append(f"位置: {doc_folder}")
+    content_parts.append(f"行业: {doc_industry}")
+    content_parts.append(f"模板: {'是' if doc_is_template else '否'}")
+    content_parts.append(f"案例: {'是' if doc_is_case else '否'}")
+    if doc_brand:
+        content_parts.append(f"品牌: {doc_brand}")
     content_parts.append(f"飞书文档ID: {doc_hash}")
     content_parts.append(f"导入时间: {datetime.now().isoformat()}")
 
     l1_doc = {
-        "doc_name": doc["name"],
-        "doc_type": doc["type"],
-        "source_folder": doc["folder"],
+        "doc_name": doc_name,
+        "doc_type": doc_type,
+        "source_folder": doc_folder,
         "feishu_token": doc_hash,
         "feishu_url": f"https://ycnm3444stv0.feishu.cn/drive/folder/EmcZfzpSul8rCcdhXvhcKpgWn7g",
         "content": "\n".join(content_parts),
         "collected_at": datetime.now().isoformat(),
-        "industries": [doc["industry"]],
-        "brands": [doc["brand"]] if doc.get("brand") else [],
-        "is_template": doc["is_template"],
-        "is_case": doc["is_case"],
+        "industries": [doc_industry],
+        "brands": [doc_brand] if doc_brand else [],
+        "is_template": doc_is_template,
+        "is_case": doc_is_case,
     }
     l1_documents.append(l1_doc)
 

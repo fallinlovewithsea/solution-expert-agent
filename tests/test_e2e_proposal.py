@@ -202,7 +202,7 @@ def test_s3_industry_insight_skill():
         "app.skills.s3_industry_insight.XHSCollector",
         return_value=mock_collector,
     ):
-        from app.skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
+        from skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
 
         skill = S3IndustryInsight()
         result = skill.run(IndustryInsightInput(
@@ -231,7 +231,7 @@ def test_xhs_collector_dev_mode():
 
     # 重新导入以应用环境变量
     import importlib
-    from app.skills import xhs_collector
+    from skills import xhs_collector
     importlib.reload(xhs_collector)
 
     collector = xhs_collector.XHSCollector()

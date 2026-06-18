@@ -170,7 +170,7 @@ class TestS3Integration:
             "collected_at": "2026-06-18",
         }
 
-        from app.skills.s3_industry_insight import S3IndustryInsight
+        from skills.s3_industry_insight import S3IndustryInsight
         skill = S3IndustryInsight()
         assert hasattr(skill, '_save_raw_xhs_data')
 
@@ -201,7 +201,7 @@ class TestS3Integration:
             "collected_at": "2026-06-18",
         }
 
-        from app.skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
+        from skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
         skill = S3IndustryInsight()
         result = skill.run(IndustryInsightInput(
             industry="母婴",
@@ -221,7 +221,7 @@ class TestS9Integration:
         mock_memory = MagicMock()
         mock_memory_class.return_value = mock_memory
 
-        from app.skills.s9_archive import S9Archive, ArchiveInput
+        from skills.s9_archive import S9Archive, ArchiveInput
         skill = S9Archive()
         result = skill.run(ArchiveInput(
             final_proposal={"client_name": "飞鹤", "industry": "母婴"},

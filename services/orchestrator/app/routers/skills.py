@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.skills.base import SkillRegistry
+from skills.base import SkillRegistry
 
 router = APIRouter()
 

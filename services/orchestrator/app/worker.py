@@ -19,7 +19,7 @@ celery_app.conf.update(
 @celery_app.task(name="collect_xhs_data")
 def collect_xhs_data(industry: str, competitors: list, client_name: str):
     """定时采集小红书数据"""
-    from app.skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
+    from skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
     skill = S3IndustryInsight()
     result = skill.run(IndustryInsightInput(
         industry=industry,
@@ -32,7 +32,7 @@ def collect_xhs_data(industry: str, competitors: list, client_name: str):
 @celery_app.task(name="archive_proposal")
 def archive_proposal(proposal_data: dict):
     """归档提案数据到物料库"""
-    from app.skills.s9_archive import S9Archive, ArchiveInput
+    from skills.s9_archive import S9Archive, ArchiveInput
     skill = S9Archive()
     result = skill.run(ArchiveInput(
         final_proposal=proposal_data,
