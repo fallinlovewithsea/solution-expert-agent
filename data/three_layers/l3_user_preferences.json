@@ -1,0 +1,25 @@
+{
+  "user_id": "default_user",
+  "preferred_industries": [
+    "母婴",
+    "大健康",
+    "家居家装",
+    "汽车"
+  ],
+  "preferred_templates": [
+    "繁星计划",
+    "KOS矩阵全链路管理通案",
+    "AI Service解决方案"
+  ],
+  "budget_range": "50-200万",
+  "output_formats": [
+    "slides",
+    "docx",
+    "html"
+  ],
+  "search_history": [],
+  "interaction_count": 0,
+  "last_active_at": "2026-06-18T10:54:00.533004",
+  "created_at": "2026-06-18T10:54:00.533012",
+  "updated_at": "2026-06-18T10:54:00.533013"
+}
