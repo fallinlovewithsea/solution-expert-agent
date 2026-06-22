@@ -9,6 +9,13 @@ build/
 *.egg
 .pytest_cache/
 
+# Uploads (large files, converted to markdown)
+.uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # Virtual environments
 venv/
 .env
