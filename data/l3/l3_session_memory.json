@@ -1,0 +1,32 @@
+[
+  {
+    "session_id": "session_example_001",
+    "user_id": "default_user",
+    "client_name": "飞鹤",
+    "industry": "母婴",
+    "stage": "方案生成",
+    "key_notes": "客户关注KOS矩阵规模化和搜索占位，已使用繁星计划模板",
+    "context": {
+      "last_template": "繁星计划升级方案",
+      "last_industry": "母婴",
+      "last_brand": "飞鹤",
+      "last_output": "slides"
+    },
+    "created_at": "2026-06-18T12:25:06.511348"
+  },
+  {
+    "session_id": "session_example_002",
+    "user_id": "default_user",
+    "client_name": "林氏家居",
+    "industry": "家居家装",
+    "stage": "需求诊断",
+    "key_notes": "客户需要KOS代发代管，关注内容质量和矩阵规模",
+    "context": {
+      "last_template": "KOS矩阵全链路管理通案",
+      "last_industry": "家居家装",
+      "last_brand": "林氏家居",
+      "last_output": "slides"
+    },
+    "created_at": "2026-06-18T12:25:06.511351"
+  }
+]

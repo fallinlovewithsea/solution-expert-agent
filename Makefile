@@ -1,4 +1,4 @@
-.PHONY: up down init-knowledge-base logs shell test
+.PHONY: up down init-knowledge-base logs shell test test-local
 
 up:
 	docker compose up -d
@@ -20,6 +20,9 @@ shell:
 
 test:
 	docker compose exec orchestrator pytest -v
+
+test-local:
+	cd services/orchestrator && python -m pytest -v
 
 pull-ollama:
 	docker compose exec ollama ollama pull qwen2.5:7b
