@@ -14,8 +14,9 @@ class VectorStore:
         "product_solution": 1024,
         "case_labels": 1024,
         "proposal_review": 1024,
-        "brand_knowledge": 1024,       # 新增：产品卖点、品牌故事、话术模板
-        "xhs_insights": 1024,           # 新增：小红书采集分析结果
+        "brand_knowledge": 1024,
+        "xhs_insights": 1024,
+        "behavioral_economics": 1024,   # 新增：行为经济学与心理学
     }
 
     def __init__(self):
