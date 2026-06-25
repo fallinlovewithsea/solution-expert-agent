@@ -24,7 +24,7 @@ class RequirementOutput(SkillOutput):
 
 class S2RequirementDiagnosis(BaseSkill):
     name = "s2_requirement_diagnosis"
-    description = "需求诊断：从客户沟通记录中提取结构化需求，生成需求文档"
+    description = "需求诊断：从客户沟通记录中提取结构化需求，运用恐惧三层穿透模型识别表层需求背后的真实恐惧"
 
     def execute(self, input_data: RequirementInput) -> RequirementOutput:
         prompt = self._build_prompt(input_data.communication_records)
@@ -54,6 +54,14 @@ class S2RequirementDiagnosis(BaseSkill):
 
     def _build_prompt(self, records: str) -> str:
         return f"""从以下客户沟通记录中提取结构化需求信息，返回 JSON 格式。
+要求运用「恐惧三层穿透模型」分析客户表达内容背后的真实恐惧。
+
+**分析框架**：
+1. 第一层（日常性恐惧）：客户直接说出来的痛点——成本高、效率低、竞品压力大。这些是建立专业信任的基础。
+2. 第二层（社会性恐惧）：客户隐约感受到但说不清楚的——怕失去话语权、怕预算被砍、怕被老板质疑能力。这些是提案的核心弹药。
+3. 第三层（基本恐惧）：客户绝对不会说的——怕职业信誉受损、怕被行业淘汰。方案逻辑必须回应它。
+
+**核心原则**：客户的痛点 = 恐惧，不是"想要"。"想要"只是恐惧被触发后的响应结果。找到恐惧，就找到了决策的开关。
 
 沟通记录：
 {records}
@@ -62,7 +70,8 @@ class S2RequirementDiagnosis(BaseSkill):
 - client_name: 客户品牌名称
 - industry: 所属行业
 - sub_category: 细分品类
-- pain_points: 客户痛点列表
+- pain_points: 客户痛点列表（优先标注每个痛点对应的恐惧层级:L1/L2/L3）
+- fears: 恐惧穿透分析，按三层结构列出
 - goals: 客户目标列表
 - budget_range: 预算范围
 - timeline: 项目时间线

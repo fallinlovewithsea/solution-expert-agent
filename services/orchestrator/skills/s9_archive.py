@@ -20,7 +20,7 @@ class ArchiveOutput(SkillOutput):
 
 class S9Archive(BaseSkill):
     name = "s9_archive"
-    description = "复盘归档：更新品牌库、竞品库、复盘库 + 记忆层"
+    description = "复盘归档：更新品牌库、竞品库、复盘库 + 记忆层 + 恐惧校准"
 
     def execute(self, input_data: ArchiveInput) -> ArchiveOutput:
         updated = []
@@ -34,20 +34,23 @@ class S9Archive(BaseSkill):
         if self._update_competitor_library(input_data.final_proposal):
             updated.append("竞品库")
 
-        # 3. 更新复盘库
+        # 3. 更新复盘库（含恐惧校准）
         proposal_id = self._update_review_library(
             input_data.final_proposal, input_data.review_comments, input_data.bid_result
         )
         if proposal_id:
             updated.append("复盘库")
 
-        # 4. 写入记忆层
+        # 4. 恐惧校准：复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库
+        self._update_fear_mapping(input_data.final_proposal, input_data.bid_result)
+
+        # 5. 写入记忆层
         self._save_to_memory(
             input_data.user_id, session_id, input_data.final_proposal,
             input_data.bid_result,
         )
 
-        # 5. 生成复盘报告
+        # 6. 生成复盘报告
         review_report = self._generate_review_report(
             input_data.final_proposal, input_data.review_comments,
             input_data.bid_result, updated,
@@ -167,6 +170,35 @@ class S9Archive(BaseSkill):
         except Exception as e:
             print(f"[S9] 记忆层写入失败: {e}")
 
+    # ── 恐惧校准 ────────────────────────────────────────────────
+
+    def _update_fear_mapping(self, proposal: dict, bid_result: str):
+        """复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库"""
+        try:
+            from app.db.database import get_db
+            db = get_db()
+            client_name = proposal.get("client_name", "")
+            industry = proposal.get("industry", "")
+
+            # 提取方案中的恐惧映射信息
+            op_strategy = proposal.get("operation_strategy", {}) or {}
+            fears = op_strategy.get("fears", {}) or {}
+
+            if client_name and fears:
+                db.execute(
+                    "INSERT INTO fear_mapping (client_name, industry, fear_analysis, bid_result, created_at) "
+                    "VALUES (?, ?, ?, ?, NOW())",
+                    (
+                        client_name,
+                        industry,
+                        json.dumps(fears, ensure_ascii=False),
+                        bid_result or "",
+                    ),
+                )
+                db.commit()
+        except Exception as e:
+            print(f"[S9] 恐惧校准写入失败: {e}")
+
     # ── 复盘报告生成 ───────────────────────────────────────────
 
     def _generate_review_report(
@@ -181,4 +213,11 @@ class S9Archive(BaseSkill):
         if review_comments:
             parts.append(f"- 审核意见：{review_comments}")
         parts.append(f"- 更新模块：{', '.join(updated) if updated else '无'}")
+
+        # 中标结果反映恐惧校准的准确性
+        if bid_result == "中标":
+            parts.append("- 恐惧校准：恐惧映射准确，方案成功触及客户决策恐惧")
+        elif bid_result == "未中标":
+            parts.append("- 恐惧校准：建议复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库")
+
         return "\n".join(parts)

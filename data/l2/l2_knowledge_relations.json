@@ -1166,5 +1166,101 @@
     "target_id": "AI Service解决方案",
     "relation_type": "complements",
     "weight": 0.6
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_xingchen_2026",
+    "target_type": "industry_strategy",
+    "target_id": "40fc86ad8579",
+    "relation_type": "belongs_to_industry",
+    "weight": 1.0
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_xingchen_2026",
+    "target_type": "competitor_analysis",
+    "target_id": "9f0ea5c94c6d",
+    "relation_type": "competes_with",
+    "weight": 0.9
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_xingchen_2026",
+    "target_type": "methodology",
+    "target_id": "feihe_full_chain",
+    "relation_type": "applies",
+    "weight": 1.0
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_cid",
+    "target_type": "methodology",
+    "target_id": "feihe_full_chain",
+    "relation_type": "applies",
+    "weight": 0.9
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_zhuorui_seo",
+    "target_type": "methodology",
+    "target_id": "100",
+    "relation_type": "applies",
+    "weight": 0.8
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_xingchen_2026",
+    "target_type": "product_solution",
+    "target_id": "hongmo_2026",
+    "relation_type": "uses_product",
+    "weight": 1.0
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "feihe_cid",
+    "target_type": "product_solution",
+    "target_id": "hongmo_2026",
+    "relation_type": "uses_product",
+    "weight": 0.9
+  },
+  {
+    "source_type": "methodology",
+    "source_id": "feihe_full_chain",
+    "target_type": "case_labels",
+    "target_id": "feihe_cid",
+    "relation_type": "validated_by",
+    "weight": 1.0
+  },
+  {
+    "source_type": "methodology",
+    "source_id": "feihe_full_chain",
+    "target_type": "case_labels",
+    "target_id": "linshi_2026",
+    "relation_type": "validated_by",
+    "weight": 0.8
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "kuaiake_2026",
+    "target_type": "industry_strategy",
+    "target_id": "c2d8306af7ea",
+    "relation_type": "belongs_to_industry",
+    "weight": 1.0
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "linshi_2026",
+    "target_type": "industry_strategy",
+    "target_id": "home_furnishing_2026",
+    "relation_type": "belongs_to_industry",
+    "weight": 1.0
+  },
+  {
+    "source_type": "case_labels",
+    "source_id": "laomiao_2026",
+    "target_type": "industry_strategy",
+    "target_id": "50c8cb9fd878",
+    "relation_type": "similar_to",
+    "weight": 0.5
   }
 ]

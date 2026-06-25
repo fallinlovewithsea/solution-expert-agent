@@ -17,7 +17,7 @@ class CaseMatchOutput(SkillOutput):
 
 class S6CaseMatch(BaseSkill):
     name = "s6_case_match"
-    description = "案例匹配：基于行业、痛点、方案模块多维度匹配相似案例"
+    description = "案例匹配：基于行业、痛点、方案模块多维度匹配相似案例，新增恐惧释放验证维度"
 
     def execute(self, input_data: CaseMatchInput) -> CaseMatchOutput:
         # 从知识库中获取案例列表
@@ -28,7 +28,7 @@ class S6CaseMatch(BaseSkill):
                 recommendation="案例库为空，建议先从知识库导入案例"
             )
 
-        # 多维打分
+        # 多维打分（含恐惧释放验证维度）
         scored = []
         for case in cases:
             score = self._calculate_score(
@@ -117,20 +117,20 @@ class S6CaseMatch(BaseSkill):
         self, case: Dict, industry: str, customer_type: str,
         pain_points: List[str], solution_modules: List[str],
     ) -> float:
-        """多维度打分：行业(40%) + 客户类型(20%) + 痛点(20%) + 方案模块(20%)"""
+        """多维度打分：行业(35%) + 客户类型(15%) + 痛点(20%) + 方案模块(20%) + 恐惧释放验证(10%)"""
         score = 0.0
 
-        # 行业匹配 (40%)
+        # 行业匹配 (35%)
         if case.get("industry", "") == industry:
-            score += 0.4
+            score += 0.35
         elif industry in case.get("industry", ""):
-            score += 0.2
+            score += 0.15
 
-        # 客户类型匹配 (20%)
+        # 客户类型匹配 (15%)
         if customer_type and case.get("customer_type", "") == customer_type:
-            score += 0.2
+            score += 0.15
         elif customer_type and customer_type in case.get("customer_type", ""):
-            score += 0.1
+            score += 0.08
 
         # 痛点匹配 (20%)
         case_pains = case.get("pain_points", [])
@@ -145,6 +145,13 @@ class S6CaseMatch(BaseSkill):
             matched = len(set(solution_modules) & set(case_modules))
             total = max(len(solution_modules), 1)
             score += 0.2 * (matched / total)
+
+        # 恐惧释放验证 (10%)：案例是否有可量化的"释放"效果（ROI/效率提升/成本降低等）
+        key_metrics = case.get("key_metrics", "")
+        if key_metrics:
+            release_indicators = ["ROI", "提升", "降低", "增长", "节约", "增效"]
+            match_count = sum(1 for ind in release_indicators if ind in key_metrics)
+            score += 0.1 * (match_count / len(release_indicators))
 
         return score
 

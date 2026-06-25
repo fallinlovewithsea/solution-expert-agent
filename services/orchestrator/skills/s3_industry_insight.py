@@ -22,7 +22,7 @@ class IndustryInsightOutput(SkillOutput):
 
 class S3IndustryInsight(BaseSkill):
     name = "s3_industry_insight"
-    description = "行业洞察：采集小红书行业数据 + 竞品分析 + 客户诊断 + 增长分析"
+    description = "行业洞察：采集小红书行业数据 + 竞品分析 + 客户诊断 + 增长分析，运用恐惧趋势法将数据转化为客户可感知的结构性压力"
 
     INDUSTRY_KEYWORDS = {
         "母婴": ["母婴", "奶粉", "宝宝", "育儿", "辅食", "婴幼儿"],
@@ -153,6 +153,12 @@ class S3IndustryInsight(BaseSkill):
         parts = [f"{industry}行业小红书KOS营销分析："]
         parts.append(f"采集行业笔记 {industry_analysis.get('note_count', 0)} 篇")
         parts.append(f"分析竞品 {len(competitor_analysis)} 个")
+
+        # 恐惧趋势表达：数据→趋势解读→规则变化→先行者
+        if industry_analysis.get("content_gaps"):
+            parts.append(f"内容空白：{industry_analysis['content_gaps']}")
+            parts.append(f"这意味着行业竞争规则正在发生变化，先行者已在重新布局")
+
         if client_diagnosis.get("status") != "未采集到数据":
             parts.append(f"客户笔记 {client_diagnosis.get('note_count', 0)} 篇")
         return "，".join(parts)
