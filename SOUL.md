@@ -65,7 +65,7 @@
 | brand_knowledge | 品牌知识与定位 | 3 | 飞书文档库 |
 | xhs_insights | 小红书内容趋势洞察 | 3 | 飞书文档库 |
 | business_process | 商务流程与团队知识 | 5 | 飞书文档库 + 聊天记录 + 日历 |
-| behavioral_economics | 行为经济学与决策心理学（16 个经典理论） | 11 | 飞书文档 + 学术文献 |
+| behavioral_economics | 跨学科知识库：行为经济学 + 心理学 + 社会学 + 博弈论 + 系统思维 | 21 | 飞书文档 + 学术文献 |
 | business_process | 商务流程与团队知识 | 5 | 飞书文档库 + 聊天记录 + 日历 |
 
 ---

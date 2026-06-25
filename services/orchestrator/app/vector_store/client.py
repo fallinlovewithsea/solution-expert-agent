@@ -16,7 +16,7 @@ class VectorStore:
         "proposal_review": 1024,
         "brand_knowledge": 1024,
         "xhs_insights": 1024,
-        "behavioral_economics": 1024,   # 新增：行为经济学与心理学
+        "behavioral_economics": 1024,   # 已扩展为跨学科知识库(含社会学/博弈论/系统思维)
     }
 
     def __init__(self):
