@@ -16,7 +16,7 @@ class ContentGenOutput(SkillOutput):
 
 class S7ContentGeneration(BaseSkill):
     name = "s7_content_gen"
-    description = "内容生成：根据方案设计生成 Slide 内容，按提案心理学模型三幕式叙事结构编排"
+    description = "内容生成：根据方案设计生成 Slide 内容，按提案心理学模型三幕式叙事结构编排，运用协调博弈焦点效应强化提案引力"
 
     SLIDE_STRUCTURE = [
         # 第一幕·分析层 — 制造"就是这样"的认同

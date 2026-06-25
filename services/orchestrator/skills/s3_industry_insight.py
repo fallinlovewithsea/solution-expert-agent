@@ -22,7 +22,7 @@ class IndustryInsightOutput(SkillOutput):
 
 class S3IndustryInsight(BaseSkill):
     name = "s3_industry_insight"
-    description = "行业洞察：采集小红书行业数据 + 竞品分析 + 客户诊断 + 增长分析，运用恐惧趋势法将数据转化为客户可感知的结构性压力"
+    description = "行业洞察：采集小红书行业数据 + 竞品分析 + 客户诊断 + 增长分析，运用恐惧趋势法将数据转化为客户可感知的结构性压力，结合制度同构理论识别行业共识信号"
 
     INDUSTRY_KEYWORDS = {
         "母婴": ["母婴", "奶粉", "宝宝", "育儿", "辅食", "婴幼儿"],

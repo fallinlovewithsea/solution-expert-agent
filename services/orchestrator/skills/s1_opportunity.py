@@ -20,7 +20,7 @@ class OpportunityOutput(SkillOutput):
 
 class S1OpportunityAssessment(BaseSkill):
     name = "s1_opportunity"
-    description = "商机评估：判断是否跟进 + 项目分类 + 风险评估，锚定客户决策恐惧层级预判推进障碍"
+    description = "商机评估：判断是否跟进 + 项目分类 + 风险评估，锚定客户决策恐惧层级预判推进障碍，运用组织权力结构分析和创新扩散S曲线定位客户"
 
     # 已知客户列表（从知识库中提取）
     KNOWN_CLIENTS = [
@@ -84,6 +84,26 @@ class S1OpportunityAssessment(BaseSkill):
             risks.append("客户损失厌恶倾向明显，提案需侧重'不做的风险'而非'做的好处'")
         elif ch_score >= 2:
             risks.append("客户变革意愿较高，可运用挑战者销售策略，侧重'增长机会'和'先发优势'")
+
+        # 社会学评估：组织权力结构判断
+        decision_maker_signals = ["总监", "VP", "副总裁", "总经理", "CEO", "CMO", "负责人"]
+        influencer_signals = ["运营", "经理", "专员", "主管", "市场部"]
+        dm_score = sum(1 for s in decision_maker_signals if s in text)
+        inf_score = sum(1 for s in influencer_signals if s in text)
+        if dm_score > inf_score:
+            risks.append("对接角色为决策层，提案应集中在战略价值和ROI论证")
+        elif inf_score > 0:
+            risks.append("对接角色为执行层/影响层，需同时准备'向上汇报版本'和'执行落地版本'")
+
+        # 社会学评估：创新扩散S曲线定位
+        early_adopter_signals = ["试点", "尝试", "先行", "标杆", "引领", "第一步"]
+        late_majority_signals = ["成熟", "验证", "稳定", "案例", "对标", "成功经验"]
+        ea_score = sum(1 for s in early_adopter_signals if s in text)
+        lm_score = sum(1 for s in late_majority_signals if s in text)
+        if ea_score >= lm_score:
+            risks.append(f"客户偏向早期采用者定位,提案需突出'先发优势'和'相对优势'(Diffusion of Innovations)")
+        else:
+            risks.append(f"客户偏向后期大众定位,提案需突出'同行验证'和'可观察性'(已有成功案例)")
 
         go = "GO" if confidence >= 0.5 else "NO_GO"
         recommendation = (

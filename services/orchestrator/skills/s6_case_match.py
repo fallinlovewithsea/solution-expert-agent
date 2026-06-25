@@ -17,7 +17,7 @@ class CaseMatchOutput(SkillOutput):
 
 class S6CaseMatch(BaseSkill):
     name = "s6_case_match"
-    description = "案例匹配：基于行业、痛点、方案模块多维度匹配相似案例，新增恐惧释放验证维度"
+    description = "案例匹配：基于行业、痛点、方案模块多维度匹配相似案例，新增恐惧释放验证和制度同构维度"
 
     def execute(self, input_data: CaseMatchInput) -> CaseMatchOutput:
         # 从知识库中获取案例列表

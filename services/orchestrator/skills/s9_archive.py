@@ -20,7 +20,7 @@ class ArchiveOutput(SkillOutput):
 
 class S9Archive(BaseSkill):
     name = "s9_archive"
-    description = "复盘归档：更新品牌库、竞品库、复盘库 + 记忆层 + 恐惧校准"
+    description = "复盘归档：更新品牌库、竞品库、复盘库 + 记忆层 + 恐惧校准 + 多轮博弈分析"
 
     def execute(self, input_data: ArchiveInput) -> ArchiveOutput:
         updated = []
@@ -214,15 +214,18 @@ class S9Archive(BaseSkill):
             parts.append(f"- 审核意见：{review_comments}")
         parts.append(f"- 更新模块：{', '.join(updated) if updated else '无'}")
 
-        # 中标结果反映恐惧校准的准确性（认知失调理论+归因理论）
+        # 中标结果反映恐惧校准的准确性（认知失调理论+归因理论+多轮博弈）
         if bid_result == "中标":
             parts.append("- 恐惧校准✅：恐惧映射准确——我们对客户'日常性→社会性→基本恐惧'的穿透是精准的")
             parts.append("- 认知失调验证✅：提案成功在客户心中建立了'旧模式vs新规则'的失调结构")
             parts.append("- 外部归因策略✅：压力归因于外部行业变化而非客户能力的策略是有效的")
+            parts.append("- 多轮博弈分析✅：第一阶段合作的信任已建立，为下一轮(续约/扩单)奠定了合作基础")
         elif bid_result == "未中标":
             parts.append("- 恐惧校准⚠️：建议复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库")
             parts.append("- 归因理论复盘：判断恐惧时是否错归因于客户自身能力？应归因于外部行业变化")
             parts.append("- EPPM复盘：方案是否提供了足够的效能感知（反应效能+自我效能）？")
+            parts.append("- 信号博弈复盘：我们的质量信号（前期投入/洞察/案例）是否足够强？竞品是否释放了更强的信号？")
+            parts.append("- 多轮博弈复盘：这不是终点，而是下一轮的起点——本次建立的行业洞察和客户关系是下一轮博弈的筹码")
             parts.append("- 建议：补充客户反馈后对比预期恐惧与实际恐惧的差距")
 
         return "\n".join(parts)
