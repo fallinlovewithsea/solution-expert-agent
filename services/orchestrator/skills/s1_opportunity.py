@@ -67,6 +67,24 @@ class S1OpportunityAssessment(BaseSkill):
         if input_data.budget_range:
             risks.append(f"预算范围：{input_data.budget_range}，需确认方案匹配度")
 
+        # 心理学评估：客户变革意愿度（前景理论-损失厌恶判断）
+        loss_aversion_signals = [
+            "现状", "稳定", "安全", "风险", "担心", "不放心",
+            "之前一直", "习惯了", "不想变", "再看看",
+        ]
+        challenger_signals = [
+            "增长", "突破", "创新", "转型", "升级", "变革",
+            "新赛道", "差异化", "机会", "领先",
+        ]
+        text = input_data.initial_requirements
+        la_score = sum(1 for s in loss_aversion_signals if s in text)
+        ch_score = sum(1 for s in challenger_signals if s in text)
+
+        if la_score > ch_score:
+            risks.append("客户损失厌恶倾向明显，提案需侧重'不做的风险'而非'做的好处'")
+        elif ch_score >= 2:
+            risks.append("客户变革意愿较高，可运用挑战者销售策略，侧重'增长机会'和'先发优势'")
+
         go = "GO" if confidence >= 0.5 else "NO_GO"
         recommendation = (
             "建议跟进，可复用已有行业经验和成功案例"

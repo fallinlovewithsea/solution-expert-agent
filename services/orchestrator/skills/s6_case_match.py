@@ -161,5 +161,14 @@ class S6CaseMatch(BaseSkill):
         high = [c for c in cases if c["relevance_score"] >= 0.5]
         if high:
             names = "、".join(c["case_name"] for c in high[:3])
-            return f"推荐参考 {names} 等 {len(high)} 个高相关案例，方案设计时可重点借鉴"
+            # 社会证明效应：多案例共同行动形成"行业共识"信号
+            social_proof = ""
+            if len(high) >= 3:
+                industries = set(c.get("industry", "") for c in high)
+                if len(industries) >= 2:
+                    social_proof = f"跨{len(industries)}个行业的案例共同验证了同类方案，这已形成行业共识——不只一家在这样做。"
+            base = f"推荐参考 {names} 等 {len(high)} 个高相关案例"
+            if social_proof:
+                return f"{base}。{social_proof}"
+            return f"{base}，方案设计时可重点借鉴"
         return f"匹配到 {len(cases)} 个案例，建议结合行业特征调整参考侧重点"

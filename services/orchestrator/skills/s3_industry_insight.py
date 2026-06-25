@@ -94,7 +94,16 @@ class S3IndustryInsight(BaseSkill):
             "entry_angles": analysis.get("entry_angles", ""),
             "sentiment": analysis.get("sentiment", ""),
             "note_count": len(data.get("notes", [])),
+            "trend_insight": self._build_trend_insight(analysis),  # 锚定效应：数据→趋势解读
         }
+
+    def _build_trend_insight(self, analysis: dict) -> str:
+        """锚定效应应用：将行业数据转化为趋势解读，切换客户参照系"""
+        gaps = analysis.get("content_gaps", "")
+        themes = analysis.get("content_themes", "")
+        if gaps and themes:
+            return f"行业正在发生结构性变化：{themes}。这意味着竞争规则正在被改写，先行者已在重新布局。"
+        return ""
 
     def _analyze_competitors(
         self, competitor_data: dict, competitors: list

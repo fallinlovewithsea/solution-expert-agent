@@ -132,7 +132,7 @@ class S7ContentGeneration(BaseSkill):
 </ul>"""
 
     def _build_industry_slide(self, industry: str, op_strategy: dict) -> str:
-        """构建行业洞察页"""
+        """构建行业洞察页（锚定效应：数据→趋势解读，切换客户参照系）"""
         insight = op_strategy.get("industry_insight", "")
         if insight:
             return f"<h2>{industry}行业小红书KOS营销趋势</h2>{insight}"
@@ -142,15 +142,18 @@ class S7ContentGeneration(BaseSkill):
 <li>KOS矩阵规模化运营成为头部品牌标配</li>
 <li>AIGC内容生产效率成为竞争关键变量</li>
 <li>搜索占位与评论区营销成为新的转化战场</li>
-</ul>"""
+</ul>
+<p style="color:#666;font-style:italic;">数据不是答案，趋势才是。真正的问题不是"市场有多大"，而是"竞争规则已经被改写了多少"。</p>"""
 
     def _build_diagnosis_slide(self, brand_name: str, pain_points: list, op_strategy: dict) -> str:
-        """构建客户诊断页"""
+        """构建客户诊断页（归因理论：外部归因，不归因于客户能力）"""
         diag = op_strategy.get("client_diagnosis", "")
         if diag:
             return f"<h2>{brand_name} 小红书营销现状诊断</h2>{diag}"
         items = "".join(f"<li>{p}</li>" for p in pain_points[:5]) if pain_points else "<li>需要进一步诊断</li>"
-        return f"<h2>{brand_name} 小红书营销现状诊断</h2><ul>{items}</ul>"
+        return f"""<h2>{brand_name} 小红书营销现状诊断</h2>
+<p style="color:#888;font-style:italic;">以下问题不是品牌独有的——它们是行业发展到这个阶段后，所有玩家都会遇到的共同挑战。</p>
+<ul>{items}</ul>"""
 
     def _build_competitor_slide(self, brand_name: str, competitors: list, op_strategy: dict) -> str:
         """构建竞品对标页"""

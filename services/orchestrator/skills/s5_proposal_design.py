@@ -125,16 +125,20 @@ class S5ProposalDesign(BaseSkill):
         return cases
 
     def _build_default_phases(self, input_data: ProposalDesignInput) -> List[Dict]:
-        """构建默认实施路径"""
+        """构建默认实施路径（运用自我效能理论与禀赋效应设计安全感交付）"""
         return [
             {"phase": "Phase 1: 需求诊断与策略对齐", "timeline": "第1-2周",
-             "deliverables": "需求诊断报告、增长策略文档"},
+             "deliverables": "需求诊断报告、增长策略文档",
+             "safety_anchor": "测试期结束即自然退出点，可验证可行性后再决策"},  # 禀赋效应：建立初始拥有感
             {"phase": "Phase 2: 内容生产与账号搭建", "timeline": "第3-4周",
-             "deliverables": "KOS矩阵搭建、AIGC内容生产"},
+             "deliverables": "KOS矩阵搭建、AIGC内容生产",
+             "safety_anchor": "对标已验证案例，已有成熟SOP可复用"},  # 替代性经验：自我效能理论
             {"phase": "Phase 3: 上线运营与数据监控", "timeline": "第5-8周",
-             "deliverables": "内容发布、数据看板、AB测试"},
+             "deliverables": "内容发布、数据看板、AB测试",
+             "safety_anchor": "阶段一成果已沉淀，投入成本已转化为资产"},  # 禀赋效应：已投入=已拥有
             {"phase": "Phase 4: 数据复盘与策略优化", "timeline": "第9-12周",
-             "deliverables": "复盘报告、优化方案、SOP文档"},
+             "deliverables": "复盘报告、优化方案、SOP文档",
+             "safety_anchor": "整套链路已跑通，可持续复制放大"},
         ]
 
     def _llm_generate(self, prompt: str) -> dict:

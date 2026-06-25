@@ -173,7 +173,7 @@ class S9Archive(BaseSkill):
     # ── 恐惧校准 ────────────────────────────────────────────────
 
     def _update_fear_mapping(self, proposal: dict, bid_result: str):
-        """复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库"""
+        """复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库（认知失调校准）"""
         try:
             from app.db.database import get_db
             db = get_db()
@@ -214,10 +214,15 @@ class S9Archive(BaseSkill):
             parts.append(f"- 审核意见：{review_comments}")
         parts.append(f"- 更新模块：{', '.join(updated) if updated else '无'}")
 
-        # 中标结果反映恐惧校准的准确性
+        # 中标结果反映恐惧校准的准确性（认知失调理论+归因理论）
         if bid_result == "中标":
-            parts.append("- 恐惧校准：恐惧映射准确，方案成功触及客户决策恐惧")
+            parts.append("- 恐惧校准✅：恐惧映射准确——我们对客户'日常性→社会性→基本恐惧'的穿透是精准的")
+            parts.append("- 认知失调验证✅：提案成功在客户心中建立了'旧模式vs新规则'的失调结构")
+            parts.append("- 外部归因策略✅：压力归因于外部行业变化而非客户能力的策略是有效的")
         elif bid_result == "未中标":
-            parts.append("- 恐惧校准：建议复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库")
+            parts.append("- 恐惧校准⚠️：建议复盘客户真实决策恐惧是否与预期一致，更新恐惧映射库")
+            parts.append("- 归因理论复盘：判断恐惧时是否错归因于客户自身能力？应归因于外部行业变化")
+            parts.append("- EPPM复盘：方案是否提供了足够的效能感知（反应效能+自我效能）？")
+            parts.append("- 建议：补充客户反馈后对比预期恐惧与实际恐惧的差距")
 
         return "\n".join(parts)
