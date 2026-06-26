@@ -181,12 +181,13 @@ class S7ContentGeneration(BaseSkill):
         if parts:
             return f"<h2>{brand_name} KOS矩阵增长方案</h2>" + "".join(parts)
         return f"""<h2>{brand_name} KOS矩阵增长方案</h2>
-<h3>增长策略</h3>
+<h3>增长策略 — 5 大业务线</h3>
 <ul>
-<li>AIGC内容量产：日产1000+文案、2000+图片，保障KOS矩阵内容供给</li>
-<li>KOS代发代管：400+账号矩阵化管理，统一内容质量与发布节奏</li>
-<li>搜索占位：关键词前置，一篇内容服务一个主关键词</li>
-<li>评论区营销：将评论区作为核心转化场</li>
+<li>AIGC内容生成：日产1000+文案、2000+图片，AI批量生产保障矩阵内容供给</li>
+<li>KOS账号托管：400+账号纯代管模式，品牌统一供内容，规模化矩阵管理</li>
+<li>评论区维护：正向评论浓度提升30%+，将评论区作为核心转化场</li>
+<li>SEO搜索占位：关键词TOP12占位，40+词按月覆盖，拦截用户主动搜索</li>
+<li>用户运营：KOC矩阵孵化+消费者笔记征集+分阶培训激励</li>
 </ul>
 <h3>执行方案</h3>
 <ul>
@@ -207,17 +208,19 @@ class S7ContentGeneration(BaseSkill):
         if parts:
             return f"<h2>工具赋能与预算规划</h2>" + "".join(parts)
         return f"""<h2>工具赋能与预算规划</h2>
-<h3>产品能力匹配</h3>
+<h3>5 大业务线核心工具</h3>
 <ul>
-<li>AI Service：AIGC内容生成、智能润色、智能改图</li>
-<li>内容罗盘：内容趋势分析、竞品监控、内容ROI评估</li>
-<li>Agent DataLake：数据湖+向量检索+LangGraph编排</li>
+<li>AIGC：AI Service内容生成引擎 + AiHub换装生图 + 一键组图API</li>
+<li>KOS托管：内容罗盘SaaS平台(设备管理/账号管理/养号/发布/互动/评论/校验/数据)</li>
+<li>评论区：评论矩阵管理(常见咨询库+高频问答库+自动回复+截图校验)</li>
+<li>SEO：搜索占位系统(关键词TOP12+联想下拉+双引擎监测)</li>
+<li>用户运营：KOC孵化系统(消费者笔记征集+活动运营+分阶激励)</li>
 </ul>
 <h3>预算规划</h3>
 <ul>
-<li>内容生产：AIGC批量生成，单篇成本可控</li>
-<li>账号管理：400+账号矩阵化管理</li>
-<li>数据看板：实时监控霸屏率与转化效果</li>
+<li>AIGC内容生产：AI批量生成，单篇成本可控</li>
+<li>KOS账号托管：400+账号矩阵化管理，边际成本趋近于零</li>
+<li>评论区+SEO：按关键词和评论量阶梯计价，飞鹤已验证模型</li>
 </ul>"""
 
     def _build_case_slide(self, matched_cases: list) -> str:
