@@ -181,10 +181,11 @@ class S7ContentGeneration(BaseSkill):
         if parts:
             return f"<h2>{brand_name} KOS矩阵增长方案</h2>" + "".join(parts)
         return f"""<h2>{brand_name} KOS矩阵增长方案</h2>
-<h3>增长策略 — 5 大业务线</h3>
+<h3>增长策略 — 6 大业务线</h3>
 <ul>
 <li>AIGC内容生成：日产1000+文案、2000+图片，AI批量生产保障矩阵内容供给</li>
 <li>KOS账号托管：400+账号纯代管模式，品牌统一供内容，规模化矩阵管理</li>
+<li>CID投放：内容+广告双轮驱动，赛马机制爆款追投，ROI≥10确定性增长</li>
 <li>评论区维护：正向评论浓度提升30%+，将评论区作为核心转化场</li>
 <li>SEO搜索占位：关键词TOP12占位，40+词按月覆盖，拦截用户主动搜索</li>
 <li>用户运营：KOC矩阵孵化+消费者笔记征集+分阶培训激励</li>
@@ -208,10 +209,11 @@ class S7ContentGeneration(BaseSkill):
         if parts:
             return f"<h2>工具赋能与预算规划</h2>" + "".join(parts)
         return f"""<h2>工具赋能与预算规划</h2>
-<h3>5 大业务线核心工具</h3>
+<h3>6 大业务线核心工具</h3>
 <ul>
 <li>AIGC：AI Service内容生成引擎 + AiHub换装生图 + 一键组图API</li>
 <li>KOS托管：内容罗盘SaaS平台(设备管理/账号管理/养号/发布/互动/评论/校验/数据)</li>
+<li>CID投放：红美CID系统(聚光投放+ROI追踪+赛马优化)</li>
 <li>评论区：评论矩阵管理(常见咨询库+高频问答库+自动回复+截图校验)</li>
 <li>SEO：搜索占位系统(关键词TOP12+联想下拉+双引擎监测)</li>
 <li>用户运营：KOC孵化系统(消费者笔记征集+活动运营+分阶激励)</li>
@@ -220,6 +222,7 @@ class S7ContentGeneration(BaseSkill):
 <ul>
 <li>AIGC内容生产：AI批量生成，单篇成本可控</li>
 <li>KOS账号托管：400+账号矩阵化管理，边际成本趋近于零</li>
+<li>CID投放：赛马机制筛选优质内容后追投，ROI≥10已验证</li>
 <li>评论区+SEO：按关键词和评论量阶梯计价，飞鹤已验证模型</li>
 </ul>"""
 
