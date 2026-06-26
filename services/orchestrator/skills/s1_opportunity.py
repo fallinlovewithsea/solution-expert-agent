@@ -105,6 +105,14 @@ class S1OpportunityAssessment(BaseSkill):
         else:
             risks.append(f"客户偏向后期大众定位,提案需突出'同行验证'和'可观察性'(已有成功案例)")
 
+        # 数字营销认知成熟度评估（决定提案第一幕分析层占比）
+        low_maturity_signals = ["传统", "没做过", "不了解", "第一次", "刚开始", "摸索", "学习"]
+        high_maturity_signals = ["之前做过", "已有矩阵", "在运营", "优化", "升级", "提效"]
+        low_ms = sum(1 for s in low_maturity_signals if s in text)
+        high_ms = sum(1 for s in high_maturity_signals if s in text)
+        if low_ms > high_ms or (ea_score == 0 and ch_score == 0):
+            risks.append("客户数字营销认知较浅，提案第一幕(行业分析+背景教育)占比应提升至40%+——优先建立'不做会失去什么'的决策基础，再进入方案细节")
+
         go = "GO" if confidence >= 0.5 else "NO_GO"
         recommendation = (
             "建议跟进，可复用已有行业经验和成功案例"
