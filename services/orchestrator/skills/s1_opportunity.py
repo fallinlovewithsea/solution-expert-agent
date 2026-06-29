@@ -113,6 +113,21 @@ class S1OpportunityAssessment(BaseSkill):
         if low_ms > high_ms or (ea_score == 0 and ch_score == 0):
             risks.append("客户数字营销认知较浅，提案第一幕(行业分析+背景教育)占比应提升至40%+——优先建立'不做会失去什么'的决策基础，再进入方案细节")
 
+        # 认同层级预估：根据沟通信号判断客户当前处于哪个认同层级
+        approval_signals = {
+            "L1_low": ["看一下", "发份资料", "什么价格", "你们做过哪些"],  # L1都未通过，不感兴趣
+            "L2": ["有点意思", "你们怎么做的", "具体说说"],                 # L1已通过，在L2
+            "L3": ["我们确实", "就是这个", "你说得对", "我们也觉得"],       # L2-L3过渡
+            "L3_stuck": ["但情况不太一样", "我们这个行业特殊", "你说得有道理不过"], # L3卡住
+            "L4": ["多少钱", "周期多长", "有没案例", "ROI怎么算"],         # L4方案认同阶段
+        }
+        if any(s in text for s in approval_signals["L1_low"]):
+            risks.append("认同层级：L1形式认同尚未建立，客户处于信息收集阶段，提案需优先建立专业度第一印象")
+        elif any(s in text for s in approval_signals["L3_stuck"]):
+            risks.append("认同层级：L3诊断认同卡住（'但情况不太一样'），提案需强化焦虑推演和行业归因，建立'这个行业所有人都面对这个转变'的共识")
+        elif any(s in text for s in approval_signals["L3"]):
+            risks.append("认同层级：L2-L3过渡中，提案可适当加速表达认同层，重点攻克诊断认同")
+
         go = "GO" if confidence >= 0.5 else "NO_GO"
         recommendation = (
             "建议跟进，可复用已有行业经验和成功案例"
