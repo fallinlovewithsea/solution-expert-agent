@@ -23,13 +23,13 @@ class S7ContentGeneration(BaseSkill):
         {"section": "封面", "title_key": "cover_title", "layout_type": "cover", "narrative_role": "开场"},
         {"section": "公司介绍", "title_key": "company_title", "layout_type": "two_column", "narrative_role": "信任背书"},
         # 痛点阶段：让客户产生"就是这样"的认同
-        {"section": "行业洞察", "title_key": "industry_title", "layout_type": "chart_focus", "narrative_role": "恐惧趋势——数据→趋势解读→规则变化→先行者"},
-        {"section": "客户诊断", "title_key": "diagnosis_title", "layout_type": "bullet_cards", "narrative_role": "恐惧推演——复述→推演结构性压力→归因行业转变"},
-        {"section": "竞品对标", "title_key": "competitor_title", "layout_type": "comparison_table", "narrative_role": "恐惧对照——竞品动作→行业共识→你的机会"},
+        {"section": "行业洞察", "title_key": "industry_title", "layout_type": "chart_focus", "narrative_role": "焦虑趋势——数据→趋势解读→规则变化→先行者"},
+        {"section": "客户诊断", "title_key": "diagnosis_title", "layout_type": "bullet_cards", "narrative_role": "焦虑推演——复述→推演结构性压力→归因行业转变"},
+        {"section": "竞品对标", "title_key": "competitor_title", "layout_type": "comparison_table", "narrative_role": "焦虑对照——竞品动作→行业共识→你的机会"},
         # 第二幕·方案层 — 制造"终于有人解决了"的释放
-        {"section": "解决方案", "title_key": "solution_title", "layout_type": "icon_grid", "narrative_role": "恐惧释放——每个方案模块对应一个恐惧释放"},
+        {"section": "解决方案", "title_key": "solution_title", "layout_type": "icon_grid", "narrative_role": "焦虑释放——每个方案模块对应一个焦虑释放"},
         {"section": "工具赋能与预算", "title_key": "tools_title", "layout_type": "grid_cards", "narrative_role": "安全感交付——阶段化+可退出+对标验证"},
-        {"section": "案例展示", "title_key": "case_title", "layout_type": "case_card", "narrative_role": "恐惧释放验证——案例数据支撑"},
+        {"section": "案例展示", "title_key": "case_title", "layout_type": "case_card", "narrative_role": "焦虑释放验证——案例数据支撑"},
         # 第三幕·收尾层 — 锚定"我也想做到这样"的向往
         {"section": "实施路径", "title_key": "timeline_title", "layout_type": "timeline", "narrative_role": "安全感交付——风险预判+退出机制"},
         {"section": "团队介绍", "title_key": "team_title", "layout_type": "two_column", "narrative_role": "痒点指向——跑通后的未来自我"},

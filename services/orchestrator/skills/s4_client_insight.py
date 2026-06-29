@@ -18,18 +18,18 @@ class ClientInsightOutput(SkillOutput):
 
 class S4ClientInsight(BaseSkill):
     name = "s4_client_insight"
-    description = "客户洞察：整合需求诊断和行业洞察，运用恐惧推演法+矛盾归因法分析核心痛点与增长机会，结合系统思维的杠杆点和反馈循环定位高优干预点"
+    description = "客户洞察：整合需求诊断和行业洞察，运用焦虑推演法+矛盾归因法分析核心痛点与增长机会，结合系统思维的杠杆点和反馈循环定位高优干预点"
 
     def execute(self, input_data: ClientInsightInput) -> ClientInsightOutput:
         req = input_data.requirement_document
         insight = input_data.insight_report
 
-        prompt = f"""基于以下信息，生成客户洞察汇总。要求运用「恐惧推演法」「矛盾归因法」进行分析。
+        prompt = f"""基于以下信息，生成客户洞察汇总。要求运用「焦虑推演法」「矛盾归因法」进行分析。
 同时运用系统思维的「杠杆点」和「反馈循环」理论定位最高效的干预点。
 
 ## 方法框架
 
-### 恐惧推演法
+### 焦虑推演法
 三步穿透：
 1. 复述——先准确复述客户主动表达的痛点，建立共鸣
 2. 推演——对每个痛点向下推演：**"如果这个行业趋势持续下去，竞争格局会发生什么变化？"**
@@ -64,15 +64,15 @@ class S4ClientInsight(BaseSkill):
 {insight}
 
 请分析并返回 JSON：
-- core_pain_points: 核心痛点（3-5条，每条标注恐惧层级L1/L2/L3）
-- fears: 恐惧穿透分析（三层结构：日常性恐惧/社会性恐惧/基本恐惧）
+- core_pain_points: 核心痛点（3-5条，每条标注焦虑层级L1/L2/L3）
+- fears: 焦虑穿透分析（三层结构：日常性焦虑/社会性焦虑/基本焦虑）
 - structural_contradiction: 结构性矛盾分析（旧规则vs新规则）
 - leverage_level: 杠杆点层级诊断（参数级/反馈回路级/范式级），判断客户当前关注的层面
 - feedback_loops: 反馈循环分析（识别增强反馈和平衡反馈，提案应作用于哪个回路）
 - market_opportunities: 市场机会（3-5条）
 - growth_model_mapping: 匹配的增长模型
 - strategy_direction: 策略方向建议
-- summary: 一句话总结（用恐惧趋势语言表达）
+- summary: 一句话总结（用焦虑趋势语言表达）
 
 只返回 JSON。"""
 

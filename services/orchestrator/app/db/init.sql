@@ -147,8 +147,8 @@ CREATE INDEX IF NOT EXISTS idx_sm_session ON session_memory(session_id);
 CREATE INDEX IF NOT EXISTS idx_sm_client ON session_memory(client_name);
 CREATE INDEX IF NOT EXISTS idx_sm_user ON session_memory(user_id);
 
--- 恐惧映射表（销售提案心理学模型）
-CREATE TABLE IF NOT EXISTS fear_mapping (
+-- 焦虑映射表（销售提案心理学模型）
+CREATE TABLE IF NOT EXISTS anxiety_mapping (
     id SERIAL PRIMARY KEY,
     client_name VARCHAR(200) NOT NULL,
     industry VARCHAR(100),
@@ -157,5 +157,5 @@ CREATE TABLE IF NOT EXISTS fear_mapping (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_fear_client ON fear_mapping(client_name);
-CREATE INDEX IF NOT EXISTS idx_fear_industry ON fear_mapping(industry);
+CREATE INDEX IF NOT EXISTS idx_anxiety_client ON anxiety_mapping(client_name);
+CREATE INDEX IF NOT EXISTS idx_anxiety_industry ON anxiety_mapping(industry);

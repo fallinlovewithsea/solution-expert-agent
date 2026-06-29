@@ -20,7 +20,7 @@ class OpportunityOutput(SkillOutput):
 
 class S1OpportunityAssessment(BaseSkill):
     name = "s1_opportunity"
-    description = "商机评估：判断是否跟进 + 项目分类 + 风险评估，锚定客户决策恐惧层级预判推进障碍，运用组织权力结构分析和创新扩散S曲线定位客户"
+    description = "商机评估：判断是否跟进 + 项目分类 + 风险评估，锚定客户决策焦虑层级预判推进障碍，运用组织权力结构分析和创新扩散S曲线定位客户"
 
     # 已知客户列表（从知识库中提取）
     KNOWN_CLIENTS = [
