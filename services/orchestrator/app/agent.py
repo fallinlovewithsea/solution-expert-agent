@@ -46,6 +46,10 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[str], operator.add]
     current_stage: str
     needs_human_review: bool
+    # 渐进式提问控制
+    needs_followup: bool           # 是否需要补充信息
+    followup_hint: str             # 补充提示（给用户看的）
+    asked_questions: list          # 已问过的问题（防重复）
     # 记忆层字段
     user_id: str
     session_id: str
@@ -74,13 +78,31 @@ def create_proposal_workflow() -> StateGraph:
         route_from_questioner,
         {"s1_opportunity": "s1_opportunity", "progressive_questioner": "progressive_questioner", END: END}
     )
+
+    # ── 分析层(S1-S4)：每一步后检查是否需要补充信息 ──
     workflow.add_edge("s1_opportunity", "s2_requirement")
     workflow.add_edge("s2_requirement", "s3_industry_insight")
     workflow.add_edge("s3_industry_insight", "s4_client_insight")
-    workflow.add_edge("s4_client_insight", "s5_proposal_design")
+
+    # S4 之后：检查是否需要补充信息再进入方案层
+    workflow.add_conditional_edges(
+        "s4_client_insight",
+        check_needs_followup,
+        {"progressive_questioner": "progressive_questioner", "s5_proposal_design": "s5_proposal_design"}
+    )
+
+    # ── 方案层(S5-S7)：线性流转 ──
     workflow.add_edge("s5_proposal_design", "s6_case_match")
     workflow.add_edge("s6_case_match", "s7_content_gen")
-    workflow.add_edge("s7_content_gen", "s8_format_output")
+
+    # S7 之后：检查是否需要调整内容
+    workflow.add_conditional_edges(
+        "s7_content_gen",
+        check_needs_followup,
+        {"progressive_questioner": "progressive_questioner", "s8_format_output": "s8_format_output"}
+    )
+
+    # ── 交付层(S8-S9) ──
     workflow.add_edge("s8_format_output", "s9_archive")
     workflow.add_edge("s9_archive", "human_review")
     workflow.add_edge("human_review", END)
@@ -163,7 +185,18 @@ def run_s4_client_insight(state: AgentState) -> AgentState:
     ))
     state["client_insight"] = result.model_dump()
     state["current_stage"] = "s4_client_insight"
-    state["messages"].append("[S4] 客户洞察完成")
+
+    # 检查关键分析是否缺失，触发中流转校准
+    if not state["client_insight"].get("leverage_level") or \
+       not state["client_insight"].get("structural_contradiction"):
+        state["needs_followup"] = True
+        state["followup_hint"] = "客户洞察分析缺少关键信息。请补充以下内容：\n- 客户当前的核心焦虑停留在哪个层面（日常性/社会性/基本焦虑）？\n- 行业正在发生什么结构性变化让客户感到压力？"
+        state["messages"].append("[S4] ⚠️ 关键分析缺失，需要补充信息")
+    else:
+        state["needs_followup"] = False
+        state["followup_hint"] = ""
+        state["messages"].append("[S4] 客户洞察完成")
+
     return state
 
 
@@ -284,23 +317,42 @@ def run_s9_archive(state: AgentState) -> AgentState:
     return state
 
 
-# ── 渐进式提问（S0）─
+def check_needs_followup(state: AgentState) -> str:
+    """检查当前阶段是否需要追问补充信息"""
+    if state.get("needs_followup", False):
+        return "progressive_questioner"
+    return (
+        "s5_proposal_design" if state["current_stage"].startswith("s4")
+        else "s8_format_output" if state["current_stage"].startswith("s7")
+        else "s5_proposal_design"
+    )
+
+
+# ── 渐进式提问（S0·入口 + 中流转校准）─
 
 
 def run_progressive_questioner(state: AgentState) -> AgentState:
-    """渐进式提问器：按认同层级L1→L5逐步收集信息"""
+    """渐进式提问器：入口收集信息 + 中流转校准方向"""
     skill = ProgressiveQuestioner()
     user_input = state.get("user_input", "")
-    current_phase = state.get("current_stage", "")
+    current_stage = state.get("current_stage", "")
+    needs_followup = state.get("needs_followup", False)
+    followup_hint = state.get("followup_hint", "")
 
-    # 判断当前阶段（首次调用从L1开始，后续根据state推进）
-    if not current_phase or current_phase == "s0_questioner":
+    # 中流转校准模式：有特定提示，针对性地问
+    if needs_followup and followup_hint:
+        state["messages"].append(f"[校准] {followup_hint}")
+        state["needs_followup"] = False
+        state["current_stage"] = current_stage  # 保持当前阶段不变
+        return state
+
+    # 入口模式：渐进式收集信息
+    if not current_stage or current_stage in ("", "s0_L1_FORM"):
         phase = "L1_FORM"
     else:
-        phase = current_phase.replace("s0_", "")
+        phase = current_stage.replace("s0_", "")
 
     collected = state.get("messages", [])
-    # 提取已收集的文本信息
     collected_text = "\n".join(str(m) for m in collected[-5:]) if collected else ""
 
     result = skill.run(ProgressiveQuestionerInput(
@@ -309,11 +361,10 @@ def run_progressive_questioner(state: AgentState) -> AgentState:
         collected_data={"history": collected_text},
     ))
 
-    # 如果条件完备，路由到 S1
     if result.ready_for_proposal:
         state["current_stage"] = "s1_opportunity"
         state["user_input"] = f"{user_input}\n\n[方案摘要]\n{result.proposal_brief}"
-        state["messages"].append(f"[提问器] ✅ 信息收集完毕，进入方案生成流程")
+        state["messages"].append("[提问器] ✅ 信息收集完毕，进入方案生成流程")
     else:
         state["current_stage"] = f"s0_{result.phase}"
         q = result.next_question
