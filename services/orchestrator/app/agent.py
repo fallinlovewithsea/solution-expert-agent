@@ -10,6 +10,9 @@ from skills.s6_case_match import S6CaseMatch, CaseMatchInput
 from skills.s7_content_gen import S7ContentGeneration, ContentGenInput
 from skills.s8_format_output import S8FormatOutput, FormatOutputInput
 from skills.s9_archive import S9Archive, ArchiveInput
+from skills.progressive_questioner import ProgressiveQuestioner, ProgressiveQuestionerInput
+from skills.s8_format_output import S8FormatOutput, FormatOutputInput
+from skills.s9_archive import S9Archive, ArchiveInput
 
 
 class AgentState(TypedDict):
@@ -53,6 +56,7 @@ class AgentState(TypedDict):
 def create_proposal_workflow() -> StateGraph:
     workflow = StateGraph(AgentState)
 
+    workflow.add_node("progressive_questioner", run_progressive_questioner)
     workflow.add_node("s1_opportunity", run_s1_opportunity)
     workflow.add_node("s2_requirement", run_s2_requirement)
     workflow.add_node("s3_industry_insight", run_s3_industry_insight)
@@ -64,7 +68,12 @@ def create_proposal_workflow() -> StateGraph:
     workflow.add_node("s9_archive", run_s9_archive)
     workflow.add_node("human_review", human_review_node)
 
-    workflow.set_entry_point("s1_opportunity")
+    workflow.set_entry_point("progressive_questioner")
+    workflow.add_conditional_edges(
+        "progressive_questioner",
+        route_from_questioner,
+        {"s1_opportunity": "s1_opportunity", "progressive_questioner": "progressive_questioner", END: END}
+    )
     workflow.add_edge("s1_opportunity", "s2_requirement")
     workflow.add_edge("s2_requirement", "s3_industry_insight")
     workflow.add_edge("s3_industry_insight", "s4_client_insight")
@@ -273,6 +282,56 @@ def run_s9_archive(state: AgentState) -> AgentState:
         f"[S9] 归档完成: 更新了 {', '.join(result.updated_libraries)}"
     )
     return state
+
+
+# ── 渐进式提问（S0）─
+
+
+def run_progressive_questioner(state: AgentState) -> AgentState:
+    """渐进式提问器：按认同层级L1→L5逐步收集信息"""
+    skill = ProgressiveQuestioner()
+    user_input = state.get("user_input", "")
+    current_phase = state.get("current_stage", "")
+
+    # 判断当前阶段（首次调用从L1开始，后续根据state推进）
+    if not current_phase or current_phase == "s0_questioner":
+        phase = "L1_FORM"
+    else:
+        phase = current_phase.replace("s0_", "")
+
+    collected = state.get("messages", [])
+    # 提取已收集的文本信息
+    collected_text = "\n".join(str(m) for m in collected[-5:]) if collected else ""
+
+    result = skill.run(ProgressiveQuestionerInput(
+        user_response=user_input,
+        current_phase=phase,
+        collected_data={"history": collected_text},
+    ))
+
+    # 如果条件完备，路由到 S1
+    if result.ready_for_proposal:
+        state["current_stage"] = "s1_opportunity"
+        state["user_input"] = f"{user_input}\n\n[方案摘要]\n{result.proposal_brief}"
+        state["messages"].append(f"[提问器] ✅ 信息收集完毕，进入方案生成流程")
+    else:
+        state["current_stage"] = f"s0_{result.phase}"
+        q = result.next_question
+        if result.need_scrutiny:
+            q = f"{result.scrutiny_comment}\n\n{q}" if q else result.scrutiny_comment
+        state["messages"].append(f"[提问器] {q}")
+
+    return state
+
+
+def route_from_questioner(state: AgentState) -> str:
+    """根据渐进式提问器的状态决定下一步"""
+    stage = state.get("current_stage", "")
+    if stage == "s1_opportunity":
+        return "s1_opportunity"
+    elif stage.startswith("s0_"):
+        return "progressive_questioner"
+    return END
 
 
 # ── 人工审核节点 ──
