@@ -19,25 +19,30 @@ celery_app.conf.update(
 @celery_app.task(name="collect_xhs_data")
 def collect_xhs_data(industry: str, competitors: list, client_name: str):
     """定时采集小红书数据"""
-    from skills.s3_industry_insight import S3IndustryInsight, IndustryInsightInput
-    skill = S3IndustryInsight()
-    result = skill.run(IndustryInsightInput(
-        industry=industry,
-        competitors=competitors,
-        client_name=client_name,
-    ))
-    return result.model_dump()
+    from app.tools.research import ResearchTool
+
+    return ResearchTool().collect({
+        "industry": industry,
+        "competitors": competitors,
+        "client_name": client_name,
+    })
 
 
 @celery_app.task(name="archive_proposal")
 def archive_proposal(proposal_data: dict):
-    """归档提案数据到物料库"""
-    from skills.s9_archive import S9Archive, ArchiveInput
-    skill = S9Archive()
-    result = skill.run(ArchiveInput(
-        final_proposal=proposal_data,
+    """项目结束后，将审核通过的最终方案归档到知识库"""
+    from app.tools.archive import ProposalArchiveTool
+
+    result = ProposalArchiveTool().archive(
+        proposal_spec=proposal_data.get("proposal_spec", proposal_data),
+        brief=proposal_data.get("brief", {}),
+        review_comments=proposal_data.get("review_comments", ""),
         bid_result=proposal_data.get("bid_result", ""),
-    ))
+        user_id=proposal_data.get("user_id", "default_user"),
+        session_id=proposal_data.get("session_id", ""),
+    )
+    if not result.success:
+        raise RuntimeError(result.error)
     return result.model_dump()
 
 

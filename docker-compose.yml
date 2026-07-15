@@ -9,6 +9,7 @@ services:
     env_file: .env
     volumes:
       - ./services/orchestrator:/app
+      - ./skills:/app/skills:ro
       - ./data:/data
     depends_on:
       postgres:
@@ -101,6 +102,7 @@ services:
     env_file: .env
     volumes:
       - ./services/orchestrator:/app
+      - ./skills:/app/skills:ro
       - ./data:/data
     depends_on:
       postgres:
@@ -116,6 +118,7 @@ services:
     env_file: .env
     volumes:
       - ./services/orchestrator:/app
+      - ./skills:/app/skills:ro
       - ./data:/data
     depends_on:
       postgres:
